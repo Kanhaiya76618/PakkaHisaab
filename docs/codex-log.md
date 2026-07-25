@@ -853,6 +853,28 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** No fixture now supplies a ledger total; only exception expectations remain declarative.
 
 **Time:** ~6 minutes. **Commit:** pending accounting-identity commit.
+
+---
+### [2026-07-26 03:30 IST] Phase 1 · live reconciliation API slice
+
+**Goal:** Expose the deterministic engine through real reconcile, ledger, exception, and resolution endpoints.
+
+**Plan:** Use a small process-local state adapter for the demo while each request invokes the engine and each stage publishes its own WebSocket event; do not add scripted replay events.
+
+**Files touched:** `backend/main.py`, `backend/tests/test_reconcile_api.py`, `docs/codex-log.md`.
+
+**Generated:** `/reconcile`, `/ledger`, `/exceptions`, and closed-set `/resolve` endpoints plus live `Reconciler`, `Exception`, and `Audit` event emissions.
+
+**Tests written first:** API smoke for engine-backed state and enum rejection/resolution.
+
+**Run results:**
+- Run 1: FAILED — endpoints returned 404 because they did not exist.
+  → Fix: added the live API adapter.
+- Run 2: PASSED — 2 focused API tests passed.
+
+**Self-review:** This is live engine execution but process-local state, not Supabase persistence; evidence endpoint and frontend remain the next Phase 1 slice.
+
+**Time:** ~8 minutes. **Commit:** pending Phase 1 API commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
