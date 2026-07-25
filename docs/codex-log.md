@@ -767,3 +767,36 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** The plan keeps engine logic separate from backend persistence and does not treat prior audit partial fixes as engine completion.
 
 **Time:** ~3 minutes. **Commit:** pending M3 plan refresh commit.
+---
+### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
+
+**Goal:** Establish deterministic typed entries and first-pass strict-priority matcher
+implementation after the committed failing contract.
+
+**Plan:** Add only model-free dataclasses and `match_entries`, then use the rule suite
+to refine precedence/compatibility before adding reconciliation orchestration.
+
+**Files touched:** `backend/engine/__init__.py` (created),
+`backend/engine/types.py` (created), `backend/engine/matchers.py` (created),
+`docs/codex-log.md` (modified).
+
+**Generated:** Immutable `Entry`/`EntryMatch`, ISO date/name normalization including
+the tested Devanagari alias, compatibility checks, and all five named matcher paths.
+
+**Tests written first:** The committed matcher contract in `d3aaa55`.
+
+**Run results:**
+- Run 1: FAILED — 4 matcher failures, 5 passed.
+  → Cause: mismatched UPI refs incorrectly fell through to amount matching; the
+  fuzzy rule legitimately applies through ±7 days so the test’s 4-day negative was
+  wrong; voice confirmations lacked a source-kind discriminator and were consumed by
+  exact matching; duplicate detection awaits the reconciler module.
+  → Fix next: reject conflicting non-null refs, correct the 7-day boundary test,
+  add source kind to the typed entry/voice rule, and implement duplicate detection in
+  the reconciler rather than weakening the tests.
+
+**Self-review:** This first red run exposed both a real safety rule (conflicting
+references must never match) and two incomplete test/API assumptions. The next commit
+will correct the public typed contract and keep rule precedence explicit.
+
+**Time:** in progress. **Commit:** pending matcher implementation commit.
