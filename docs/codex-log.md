@@ -8,6 +8,7 @@
 | 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | 8c2fae3 |
 | 2026-07-26 | 2.5 | Integration audit and sample-data plan | Complete | 0 | 9cea175 |
 | 2026-07-26 | 2.5 | Audit and sample data | Complete | 5 | 7a9e3d8 |
+| 2026-07-26 | 3 | Deterministic engine plan | Complete | 0 | pending plan commit |
 
 ## Historical context
 
@@ -552,3 +553,35 @@ production build pass.
 **Open risks:** Replace the local placeholder OpenAI key to re-record vision fixtures;
 complete the local Supabase startup then run the real migration/insert smoke before
 deployment validation.
+
+---
+### [2026-07-26 02:14 IST] Milestone 3 · deterministic engine plan
+
+**Goal:** Define the contract-first build for reconciliation, the project’s
+model-free financial truth layer.
+
+**Plan:** Commit complete negative/boundary/e2e tests before engine code, implement
+the five matching rules in priority order, then materialize ledger/match/exception
+results and expose only the demo reconciliation endpoint. Models, HTTP clients, and
+float money conversions are excluded from `engine/` by design.
+
+**Files touched:** `PLAN.md` (modified: detailed Milestone 3 steps and files),
+`docs/codex-log.md` (modified: plan table and entry).
+
+**Generated:** Test-first engine sequence covering all five rules, exact seeded
+exceptions/totals, deterministic normalization, and bilingual API progress.
+
+**Tests written first:** Scheduled `test_money.py`, `test_matchers.py`, and
+`test_reconciler_e2e.py` as the complete pre-implementation suite, followed by a
+reconcile API regression test.
+
+**Run results:**
+- Run 1: PASSED — Milestone 2.5 close-out commits completed before planning began.
+
+**Self-review:** The generated data contains a semantic tension: the requirement asks
+for exactly four personal transactions but §11 specifies only the ₹15,000 credit as a
+seeded personal exception. The e2e contract will classify only that named ₹15,000 row
+as the deterministic exception and retain the other three as personal source facts,
+avoiding invention of three extra exception kinds.
+
+**Time:** ~4 minutes. **Commit:** pending plan commit.

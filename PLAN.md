@@ -150,10 +150,46 @@ PLACEHOLDERs. This milestone stops before reconciliation-engine implementation.
 - only the backend/frontend/config files directly implicated by a verified seam
   mismatch.
 
-## Milestone 3 — reconciliation engine and deterministic tests (Day 3)
+## Milestone 3 — deterministic reconciliation engine (Day 3)
 
-Implement normalization, matching rules, anomaly detection, ledger/match writes, and
-the money/no-model guard tests. Seed the four deterministic exception scenarios.
+**Outcome:** a model-free, deterministic engine reconciles the generated demo inputs
+into ledger/match records and produces exactly the four documented exceptions in
+`MOCK_MODE=true`. This milestone stops before exception-resolution UI and Evidence
+Passport delivery work.
+
+1. Write and commit the complete failing engine suite before engine code:
+   `test_money.py` for paise/no-model guards, `test_matchers.py` for every five
+   priority rules plus all stated boundaries, and `test_reconciler_e2e.py` that parses
+   the generated 2.5 source data and hardcodes the ground-truth ledger/exception
+   expectations.
+2. Add typed, immutable engine records and data loaders that keep all monetary values
+   as integer paise; no model-router, HTTP, or database imports occur in `engine/`.
+3. Implement `engine/matchers.py` in strict priority order: exact reference, exact
+   amount/date, ±3-day amount window, fuzzy party/amount (0.85 boundary), and
+   voice-confirmed. A match always contains its explicit rule and score; split
+   payments never merge implicitly.
+4. Implement `engine/reconciler.py`: deterministic name/date/value normalization
+   (including Devanagari matching), dedupe, matching, ledger/match materialization,
+   and anomaly detection for duplicate invoices, khaata written-total arithmetic,
+   ≤₹10 mismatches, and explicitly classified personal rows.
+5. Add a demo-store reconciliation service/controller that reads a deterministic
+   mock fixture repository, calls the engine, returns a typed summary, and publishes
+   bilingual progress through the existing store WebSocket hub. Add an API smoke test
+   for anonymous demo reconciliation.
+6. Run focused rule/e2e/API tests after each implementation increment, then all
+   backend tests, static hard-rule sweeps, frontend typecheck/build, and CI-equivalent
+   mock suite. Log every red/green cycle and self-review before stopping.
+
+**Milestone 3 planned files**
+
+- `PLAN.md`, `docs/codex-log.md`
+- `backend/engine/__init__.py`, `backend/engine/types.py`,
+  `backend/engine/matchers.py`, `backend/engine/reconciler.py`, and only deterministic
+  fixture/loading helpers required by the engine
+- `backend/tests/test_money.py`, `backend/tests/test_matchers.py`,
+  `backend/tests/test_reconciler_e2e.py`, and an API regression test for reconciliation
+- `backend/main.py` plus a narrow demo reconciliation adapter only after engine tests
+  pass; no frontend implementation is planned in this milestone.
 
 ## Milestone 4 — exception workflow and Evidence Passport (Day 4)
 
