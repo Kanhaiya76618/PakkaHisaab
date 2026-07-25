@@ -767,6 +767,25 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** The plan keeps engine logic separate from backend persistence and does not treat prior audit partial fixes as engine completion.
 
 **Time:** ~3 minutes. **Commit:** pending M3 plan refresh commit.
+
+---
+### [2026-07-26 02:52 IST] Milestones 4+5 · combined live-product plan
+
+**Goal:** Sequence the requested live-only M4+5 execution without bypassing the unfinished deterministic engine.
+
+**Plan:** Finish M3 first, then execute the six supplied phases in judging-value order with phase-boundary commits.
+
+**Files touched:** `PLAN.md`, `docs/codex-log.md`.
+
+**Generated:** Combined plan with M3 prerequisite and live-pipeline constraint.
+
+**Tests written first:** Deferred to each phase.
+
+**Run results:** Plan-only.
+
+**Self-review:** No canned flows will be added; static demo data must be replaced only after the live engine route exists.
+
+**Time:** ~2 minutes. **Commit:** pending combined-plan commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 

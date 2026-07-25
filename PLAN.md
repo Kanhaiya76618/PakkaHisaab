@@ -255,6 +255,36 @@ Passport delivery work.
 Add constrained exception actions, authorization checks, resolution flow, and
 Evidence Passport API/UI using real document URLs.
 
+## Milestones 4+5 — combined live-product run
+
+**Constraint:** Milestone 3 is an explicit prerequisite because Phase 1 must invoke
+the real deterministic engine. Complete and commit its pure reconciler before wiring
+any M4/M5 route; no seeded/static or timer-driven substitute is acceptable.
+
+1. Finish the pure M3 reconciler from its already committed tests and fixture contract;
+   then expose `POST /reconcile` which runs engine, exception processing, and audit
+   stages while each stage emits its own bilingual WebSocket progress.
+2. Add state repositories and real endpoints for ledger, exceptions, validated
+   resolution, and evidence; add endpoint and WebSocket-stage contract tests.
+3. Wire the Hisaab UI to those endpoints with loading, empty, error, and success
+   states; replace static data and timer-driven reconciliation with re-queried state.
+4. Seed demo source/extraction inputs through the regular pipeline, record live versus
+   cached extraction mode, add reset SQL/API/UI, and test reset behavior.
+5. Add deterministic live risk calculation and its golden fixture generator, Kavach
+   API/UI, and notice drafting from current ledger evidence.
+6. Add runtime CSV/PDF exports and real Storage upload/signed URL integration.
+7. Complete Supabase login/onboarding and the authorization sweep. Add text query and
+   voice upload only after all preceding phases are green.
+
+**Combined run files**
+
+- `PLAN.md`, `docs/codex-log.md`, `docs/audit-m2.md`
+- M3 prerequisite: `backend/engine/*`, M3 tests, `sample_data/fixtures/expected_m3.json`
+- Phase 1: backend route/repository modules, `backend/main.py`, endpoint tests, Hisaab
+  API client/page/components
+- Phases 2–5: narrowly scoped migrations, reset/risk/export/storage/auth modules,
+  tests, and matching frontend pages only.
+
 ## Milestone 5 — risk, exports, storage, and demo reset (Day 5)
 
 Implement deterministic risk scoring, CSV/PDF exports, private signed document URLs,
