@@ -4,6 +4,8 @@
 |------|-----------|------|---------|-----------|--------|
 | 2026-07-26 | 1 | Contract intake and full-project plan | Complete | 0 | ff69528 |
 | 2026-07-26 | 1 | Day 1 implementation and verification | Complete | 4 | edf9d23 |
+| 2026-07-26 | 2 | Intake pipeline plan | Complete | 0 | 1281749 |
+| 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | pending self-review commit |
 
 ## Historical context
 
@@ -211,4 +213,153 @@ a full Markdown parser to avoid adding unneeded rendering dependencies in Day 1.
 
 **Self-review:** The plan deliberately excludes the uploads endpoint and Storage URL helper: patch §30 assigns Storage work to Day 2 broadly, but the explicit scope is CSV/router/vision intake and says stop at extracted entries. The ambiguity is recorded.
 
-**Time:** ~8 minutes. **Commit:** pending plan commit.
+**Time:** ~8 minutes. **Commit:** `1281749` plan milestone 2 intake pipeline.
+
+---
+### [2026-07-26 01:31 IST] Milestone 2 · parser, router, and intake contract tests
+
+**Goal:** Define the Day 2 behavior before creating parser, router, or agent modules.
+
+**Plan:** Use pure fixtures and injected fakes so all tests run with `MOCK_MODE=true`.
+Cover mobile-payment CSV header variants, malformed inputs, monetary integer integrity,
+router fixture/error behavior, and an end-to-end in-memory demo intake write.
+
+**Files touched:** `backend/tests/test_csv_parser.py` (created),
+`backend/tests/test_router_mock.py` (created), `backend/tests/test_intake_agent.py`
+(created), `docs/codex-log.md` (modified: opened this work-unit entry).
+
+**Generated:** Pending tests for all requested CSV cases, routing table/fixture parsing,
+retry failure, khaata/invoice evidence preservation, and bilingual progress events.
+
+**Tests written first:** Parser tests cover PhonePe, GPay, Paytm/bank, Hindi headers,
+empty input, malformed rows, debit/credit split columns, and `amount_paise` integer
+types. Router tests cover mock fixture loading, fenced JSON parsing, missing fixture,
+and one retry. Intake tests require demo-store extraction rows and event text.
+
+**Run results:**
+- Run 1: FAILED — `MOCK_MODE=true .venv/bin/pytest tests/test_csv_parser.py
+  tests/test_router_mock.py tests/test_intake_agent.py` — collection raised missing
+  `intake`, `model_router`, and `agents` modules.
+  → Cause: application modules do not exist yet, as intended by the test-first flow.
+  → Fix: create the typed parser, router, fixtures, and intake-agent modules next.
+- Run 2: FAILED — `test_hindi_headers_are_detected` — parser returned no rows for
+  `तारीख, नाम, राशि, यूपीआई रेफ`.
+  → Cause: the header normalizer's ASCII-oriented regex stripped Devanagari combining
+  marks, so the Hindi synonym could not match.
+  → Fix: preserve Unicode mark categories (`Mn`/`Mc`) while removing punctuation.
+- Run 3: FAILED — `test_hindi_headers_are_detected` — amount parsed but
+  `party_name` was `None`.
+  → Cause: the synonym list included Hindi monetary/date/ref labels but omitted the
+  common Hindi party header `नाम`.
+  → Fix: added `नाम` to party header synonyms.
+- Run 4: PASSED — focused Day 2 suite — 14 passed, 0 failed after the vocabulary fix.
+- Run 5: FAILED — `test_each_router_call_is_handed_to_model_call_persistence` —
+  `model_router` lacked `_persist_model_call`.
+  → Cause: in-memory telemetry existed but was not yet handed to the Supabase
+  `model_calls` REST table.
+  → Fix: added best-effort service-role persistence after every call while retaining
+  local telemetry as the no-credential/mock fallback.
+- Run 6: PASSED — `MOCK_MODE=true .venv/bin/pytest tests/test_router_mock.py` —
+  6 passed, 0 failed.
+- Run 7: PASSED — `MOCK_MODE=true .venv/bin/pytest tests` — 19 passed, 0 failed
+  (one third-party FastAPI TestClient deprecation warning).
+- Run 8: PASSED — `npm run typecheck && npm run build` in `frontend/` — typecheck
+  and production build completed.
+- Run 9: FAILED — `rg ... backend` while already inside `backend/` — path lookup
+  failed because the command accidentally prefixed the current directory.
+  → Cause: incorrect review command path, not application code.
+  → Fix: reran the scoped checks from the correct directory; the only OpenAI import
+  is `model_router.py`, and there are no `float(` conversions in intake or agents.
+- Run 10: FAILED — `test_unsupported_intake_kind_is_not_misrouted_to_invoice` — a
+  `voice_note` was treated as an invoice.
+  → Cause: the initial dispatch used invoice as a catch-all `else` route.
+  → Fix: replaced it with an explicit `khaata_photo`/`invoice_image` map and a typed
+  unsupported-kind error.
+- Run 11: PASSED — `MOCK_MODE=true .venv/bin/pytest tests` — 20 passed, 0 failed
+  (one third-party FastAPI TestClient deprecation warning).
+
+**Self-review:** Parser tests reject float monetary output but allow confidence as a
+non-money scalar. The invoice prompt has no verbatim text in §7.1, so tests assert the
+published JSON schema and evidence semantics rather than inventing a hidden prompt.
+
+**Time:** ~10 minutes. **Commit:** pending Milestone 2 self-review commit.
+
+---
+### [2026-07-26 01:39 IST] Milestone 2 · intake implementation and self-review
+
+**Goal:** Ship the Day 2 CSV and vision extraction paths with safe model routing,
+source provenance, and demo-safe fixtures.
+
+**Plan:** Keep CSV entirely standard-library and use `Decimal` for paise conversion;
+use a single lazy OpenAI import in the router. For database persistence, send
+telemetry through the service-role REST endpoint only when credentials exist and keep
+an in-memory record for isolated mock tests. Rejected live fixture recording because
+there are no source images in `sample_data/`.
+
+**Files touched:** `backend/intake/__init__.py` (created),
+`backend/intake/types.py` (created: immutable extraction draft),
+`backend/intake/csv_parser.py` (created: header/datetime/currency parser),
+`backend/model_router.py` (created: routing, retries, fixtures, telemetry),
+`backend/agents/__init__.py` (created), `backend/agents/intake_agent.py` (created:
+CSV and vision dispatch plus WebSocket adapter), `backend/pyproject.toml` (modified:
+declared OpenAI SDK), `backend/tests/test_csv_parser.py`,
+`backend/tests/test_router_mock.py`, `backend/tests/test_intake_agent.py` (created),
+`sample_data/fixtures/vision_khaata.json`, `sample_data/fixtures/vision_invoice.json`,
+`sample_data/fixtures/README.md` (created: PLACEHOLDER provenance), and
+`docs/codex-log.md` (modified).
+
+**Generated:** `parse_csv_text`, `ExtractedEntryDraft`, `route`, `RouterError`,
+fenced-JSON parsing, route telemetry and best-effort `model_calls` persistence,
+verbatim khaata prompt, invoice prompt, `IntakeAgent`, and `websocket_emitter`.
+Fixtures produce source-referenced demo-store extraction drafts for khaata and
+invoices; CSV produces deterministic drafts at confidence 1.0.
+
+**Tests written first:** `test_csv_parser.py`, `test_router_mock.py`, and
+`test_intake_agent.py`; 20 backend tests now cover the stated formats, malformed and
+empty files, Hindi headers, no-float monetary output, router mock/failure/retry/
+telemetry behavior, source references, integer paise, and bilingual WebSocket events.
+
+**Run results:**
+- Run 1: PASSED — installed the declared `openai` package in the ignored local
+  virtual environment; no live API call was attempted.
+- Run 2: PASSED — backend test suite: 20 passed, 0 failed.
+- Run 3: PASSED — frontend typecheck and production build.
+- Run 4: PASSED — after the telemetry retry review correction, backend suite:
+  20 passed, 0 failed.
+
+**Self-review:** Re-read parser conversion and vision transformation to confirm every
+amount crosses through `Decimal` then `int` paise; confidence is deliberately the
+only floating scalar. Re-read import boundaries: OpenAI is imported lazily only in
+`model_router.py`. The router has a 30-second provider timeout and one retry; the
+separate telemetry write has a bounded 5-second timeout and one retry, so telemetry
+cannot fail extraction. Deferred actual upload/source-document endpoints and physical
+Supabase `extracted_entries` writes because the requested Day 2 scope stops at intake
+outputs and no upload contract was included. The invoice system prompt is a documented
+schema-aligned interpretation because §7.1 only supplies a verbatim khaata prompt.
+
+**Time:** ~10 minutes. **Commit:** pending Milestone 2 self-review commit.
+
+---
+## Milestone 2 Summary
+
+**Shipped:** Pure Python CSV parsing for UPI and bank exports; mock-safe multi-model
+router with timeout/retry/telemetry; khaata and invoice intake orchestration;
+source-row evidence references; integer-paise conversion; bilingual structured
+WebSocket event adapter; and mock-mode test coverage/CI compatibility.
+
+**PLACEHOLDER:** `sample_data/fixtures/vision_khaata.json` and
+`sample_data/fixtures/vision_invoice.json`. The repository had no sample images, so
+they were schema-valid hand-authored fixtures, explicitly labelled for later live
+re-recording. No model call was claimed or performed.
+
+**Deferred:** Upload and source-document API, direct persistence of intake output to
+the remote `extracted_entries` table, Storage signed URLs, voice/transcription,
+reconciliation, and all Milestone 3 work.
+
+**Cumulative tests:** 20 passed, 0 failed (`MOCK_MODE=true`); frontend typecheck and
+production build pass.
+
+**Open risks:** A browser anonymous key still needs to be placed in the ignored
+`frontend/.env` from the Supabase dashboard; a real project needs its migration
+applied and service-role credentials configured before remote telemetry/extraction
+persistence can be verified. The local runner is Python 3.14 while CI targets 3.11.

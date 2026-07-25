@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "entry_type": "credit_given",
+      "party_name": "Ramesh",
+      "amount_rupees": 2500,
+      "entry_date": "2026-07-12",
+      "description": "Cash credit written in demo khaata",
+      "row_ref": "page 1, row 1",
+      "confidence": 0.91
+    }
+  ]
+}
