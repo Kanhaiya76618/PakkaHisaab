@@ -875,6 +875,25 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** This is live engine execution but process-local state, not Supabase persistence; evidence endpoint and frontend remain the next Phase 1 slice.
 
 **Time:** ~8 minutes. **Commit:** pending Phase 1 API commit.
+
+---
+### [2026-07-26 03:38 IST] Completion audit · all prior requirements
+
+**Goal:** Recheck every promised milestone and phase before continuing implementation.
+
+**Plan:** Inspect routes, tests, static frontend data, fake timers, persistence, and deferred-register work; remediate live core before later features.
+
+**Files touched:** `PLAN.md`, `docs/codex-log.md`.
+
+**Generated:** Verified gap list: Hisaab/Kavach simulations, missing evidence/risk/notices/exports/reset/onboarding/query, and process-local state.
+
+**Tests written first:** Scheduled per remediation phase.
+
+**Run results:** Static cross-file review completed; no uncommitted product code found.
+
+**Self-review:** Earlier “Phase 1” was only a backend slice, not full Phase 1. This entry corrects the record and prevents overstating completion.
+
+**Time:** ~6 minutes. **Commit:** pending completion-audit plan commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 

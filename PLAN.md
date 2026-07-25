@@ -285,6 +285,19 @@ any M4/M5 route; no seeded/static or timer-driven substitute is acceptable.
 - Phases 2–5: narrowly scoped migrations, reset/risk/export/storage/auth modules,
   tests, and matching frontend pages only.
 
+## Completion audit and remediation order
+
+1. Replace every Hisaab timer/static demo flow with real API requests and a typed
+   frontend client; add evidence API and process real reconcile/resolve outcomes.
+2. Replace process-local intake/reconciliation state with a repository that persists
+   source documents, extracted entries, ledger, matches, and exceptions through
+   Supabase in production while retaining a deterministic mock adapter for tests.
+3. Implement demo seeding/reset, then risk/notices, exports/storage, and auth/onboarding
+   in the committed M4+5 phase order; each feature must have endpoint tests before UI.
+4. Remove or label all remaining intentional placeholders (voice, evals) rather than
+   presenting them as executed product flows. Run full backend/frontend verification at
+   every phase boundary.
+
 ## Milestone 5 — risk, exports, storage, and demo reset (Day 5)
 
 Implement deterministic risk scoring, CSV/PDF exports, private signed document URLs,
