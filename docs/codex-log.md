@@ -6,7 +6,8 @@
 | 2026-07-26 | 1 | Day 1 implementation and verification | Complete | 4 | edf9d23 |
 | 2026-07-26 | 2 | Intake pipeline plan | Complete | 0 | 1281749 |
 | 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | 8c2fae3 |
-| 2026-07-26 | 2.5 | Integration audit and sample-data plan | Complete | 0 | pending plan commit |
+| 2026-07-26 | 2.5 | Integration audit and sample-data plan | Complete | 0 | 9cea175 |
+| 2026-07-26 | 2.5 | Audit and sample data | Complete | 5 | 7a9e3d8 |
 
 ## Historical context
 
@@ -397,7 +398,7 @@ checks. Sample-data tests will be added before the generator implementation.
 the patched repository contains SQL migrations, not SQLAlchemy models. The plan keeps
 that conflict visible and will neither invent models nor silently weaken the check.
 
-**Time:** ~8 minutes. **Commit:** pending plan commit.
+**Time:** ~8 minutes. **Commit:** `9cea175` plan milestone 2.5 integration audit.
 
 ---
 ### [2026-07-26 01:52 IST] Milestone 2.5 · seam and sample-data tests
@@ -440,7 +441,7 @@ passing seam checks.
 failures are test-harness scope bugs, not grounds to add unrelated environment entries
 or inspect virtualenv code.
 
-**Time:** in progress. **Commit:** pending Milestone 2.5 self-review commit.
+**Time:** ~8 minutes. **Commit:** `7a9e3d8` milestone 2.5: audit and sample data (self-reviewed).
 
 ---
 ### [2026-07-26 01:57 IST] Milestone 2.5 · live vision fixture recording attempt
@@ -470,7 +471,7 @@ shape; a ground-truth fixture regression test follows before replacement JSON.
 **Self-review:** This was an honest attempted recording, not a fabricated result. The
 provider safely rejected the placeholder key; no image extraction result was written.
 
-**Time:** ~2 minutes. **Commit:** pending Milestone 2.5 self-review commit.
+**Time:** ~2 minutes. **Commit:** `7a9e3d8` milestone 2.5: audit and sample data (self-reviewed).
 
 ---
 ### [2026-07-26 02:11 IST] Milestone 2.5 · audit fixes and sample-data self-review
@@ -528,7 +529,7 @@ engine guard. The fresh-local Supabase apply remains the only audit item not com
 in this session; the original request's “SQLAlchemy models” wording conflicts with the
 patch's SQL-only Supabase architecture, so no fabricated models were added.
 
-**Time:** ~22 minutes. **Commit:** pending Milestone 2.5 self-review commit.
+**Time:** ~22 minutes. **Commit:** `7a9e3d8` milestone 2.5: audit and sample data (self-reviewed).
 
 ---
 ## Milestone 2.5 Summary
