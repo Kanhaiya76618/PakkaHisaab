@@ -298,6 +298,16 @@ any M4/M5 route; no seeded/static or timer-driven substitute is acceptable.
    presenting them as executed product flows. Run full backend/frontend verification at
    every phase boundary.
 
+## Deployment readiness — Railway + Vercel
+
+1. Add Railway backend configuration rooted at `backend/`, Python 3.11, dynamic
+   `$PORT` uvicorn command, and `/api/health` health check; make `FRONTEND_ORIGIN`
+   explicit in backend CORS.
+2. Make frontend API/WS configuration fail clearly in production if its public URLs
+   are missing while preserving local development defaults only in development.
+3. Document click-by-click Railway/Vercel deployment, dashboard variables, Supabase
+   pooler requirement, CORS exact-origin rule, and post-deploy smoke checks.
+
 ## Milestone 5 — risk, exports, storage, and demo reset (Day 5)
 
 Implement deterministic risk scoring, CSV/PDF exports, private signed document URLs,

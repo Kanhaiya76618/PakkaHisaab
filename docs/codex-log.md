@@ -960,6 +960,25 @@ ground truth. No test was weakened to permit a model call or float amount.
 Local `GET /health`, `POST /stores/demo`, `POST /reconcile`, `GET /ledger`, and
 `GET /exceptions` returned success against the demo store. Local server booted; frontend
 server and deployed URLs could not be verified because deployment targets/configuration are absent.
+
+---
+### [2026-07-26 04:00 IST] Section A · Railway and Vercel readiness plan
+
+**Goal:** Make the monorepo deployable by one manual Railway/Vercel dashboard pass without committing secrets.
+
+**Plan:** Add Railway runtime/start/health configuration, environment-driven CORS and production-safe frontend URL checks, then write a deployment runbook.
+
+**Files touched:** `PLAN.md`, `docs/codex-log.md`.
+
+**Generated:** Deployment readiness plan.
+
+**Tests written first:** Existing build and backend health tests will verify this configuration.
+
+**Run results:** Plan-only.
+
+**Self-review:** Railway is the backend target; no Render configuration will be introduced.
+
+**Time:** ~2 minutes. **Commit:** pending Section A plan commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
