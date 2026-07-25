@@ -18,3 +18,9 @@ export async function loadDemoStore(): Promise<z.infer<typeof DemoStoreResponse>
   if (!response.ok) throw new Error("Demo store could not be opened. Please retry.");
   return DemoStoreResponse.parse(await response.json());
 }
+
+export async function resetDemoStore() {
+  const response = await fetch(`${apiBaseUrl()}/api/demo/reset`, { method: "POST" });
+  if (!response.ok) throw new Error("Demo reset failed. Please retry.");
+  return response.json() as Promise<{ reset: boolean }>;
+}

@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Suspense, useState } from "react";
 import { ThemeLangControls } from "./ThemeLangControls";
 import { DEMO_STORE_ID } from "@/lib/constants";
+import { resetDemoStore } from "@/lib/api";
 
 const navigation = [
   { suffix: "/digitize", label: "Digitize", icon: FileUp },
@@ -19,8 +20,10 @@ const navigation = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const storeId = pathname?.match(/^\/store\/([^/]+)/)?.[1] ?? DEMO_STORE_ID;
   const homeHref = `/store/${storeId}/hisaab`;
+  async function resetDemo() { setResetting(true); try { await resetDemoStore(); window.location.assign(homeHref); } finally { setResetting(false); } }
 
   return <div className="app-frame">
     <aside className={`sidebar ${expanded ? "sidebar-expanded" : ""}`} aria-label="Primary navigation">
@@ -42,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="app-content">
       <header className="topbar">
         <div className="wordmark"><Link href={homeHref}>Pakka<span>Hisaab</span></Link><p>Five ways in, one truth out</p></div>
-        <div className="topbar-right"><span className="demo-badge">Demo · Sharma Kirana Store</span><Suspense fallback={null}><ThemeLangControls /></Suspense></div>
+        <div className="topbar-right"><span className="demo-badge">Demo · Sharma Kirana Store</span>{storeId === DEMO_STORE_ID && <button className="button button-secondary" onClick={resetDemo} disabled={resetting}>{resetting ? "Resetting…" : "Reset demo data"}</button>}<Suspense fallback={null}><ThemeLangControls /></Suspense></div>
       </header>
       <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
     </div>

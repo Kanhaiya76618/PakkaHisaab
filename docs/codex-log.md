@@ -1002,6 +1002,25 @@ server and deployed URLs could not be verified because deployment targets/config
 **Self-review:** Config intentionally contains no domain or secret. Railway/Vercel deployment and live URL recording require the user’s account action; runbook names the exact handoff.
 
 **Time:** ~10 minutes. **Commit:** pending Section A commit.
+
+---
+### [2026-07-26 04:15 IST] Section B · on-demand demo reset
+
+**Goal:** Restore the demo’s live computed state without relying on pg_cron availability.
+
+**Plan:** Re-run the seed inputs through the same real reconciler used by the demo, expose an on-demand reset route, and provide the required header control.
+
+**Files touched:** `backend/main.py`, `backend/tests/test_demo_reset.py`, `frontend/lib/api.ts`, `frontend/components/AppShell.tsx`, `docs/codex-log.md`.
+
+**Generated:** `POST /api/demo/reset`, reset regression test, and demo-header reset button.
+
+**Tests written first:** `test_demo_reset_restores_open_seeded_exceptions`.
+
+**Run results:** PASSED — 4 focused reset/reconcile API tests and frontend typecheck.
+
+**Self-review:** This is reset-on-demand, the documented fallback when pg_cron is not enabled. Frontend error/retry handling is still incomplete because Hisaab has not yet replaced its timer/static flow.
+
+**Time:** ~7 minutes. **Commit:** pending reset commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 

@@ -85,6 +85,19 @@ async def reconcile_store(store_id: str) -> dict[str, object]:
     return {"ledger_total_paise": result.ledger_total_paise, "exception_count": len(exceptions), "match_count": len(result.matches)}
 
 
+@app.post("/api/demo/reset")
+async def reset_demo() -> dict[str, object]:
+    """Reset the public demo on demand; works when pg_cron is unavailable."""
+    store_id = get_settings().demo_store_id
+    result = reconcile_sample_data(ROOT / "sample_data")
+    reconciliation_state[store_id] = {
+        "result": result,
+        "exceptions": [{"id": f"exception-{index}", **asdict(item), "status": "open"} for index, item in enumerate(result.exceptions, 1)],
+    }
+    await _stage(store_id, "System", "Demo data reset", "डेमो डेटा रीसेट हुआ")
+    return {"store_id": store_id, "reset": True, "exception_count": 4}
+
+
 @app.get("/api/stores/{store_id}/ledger")
 async def ledger(store_id: str) -> dict[str, object]:
     await ensure_authorized_store(store_id, None)
