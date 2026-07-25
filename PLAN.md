@@ -308,6 +308,14 @@ any M4/M5 route; no seeded/static or timer-driven substitute is acceptable.
 3. Document click-by-click Railway/Vercel deployment, dashboard variables, Supabase
    pooler requirement, CORS exact-origin rule, and post-deploy smoke checks.
 
+## Scope restoration — evals, drift, fixtures, TTS, README
+
+1. Build fixture-driven eval cases and a deterministic runner/API; commit generated
+   counterfactual data rather than requiring live model calls in the UI.
+2. Add the constrained GST schema-drift demonstration and regression test after evals.
+3. Add idempotent fixture refresh tooling and deployment guidance for real-photo swaps.
+4. Add Hindi TTS only after the previous sections, then final README documentation.
+
 ## Milestone 5 — risk, exports, storage, and demo reset (Day 5)
 
 Implement deterministic risk scoring, CSV/PDF exports, private signed document URLs,

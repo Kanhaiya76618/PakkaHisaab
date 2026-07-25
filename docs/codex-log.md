@@ -1021,6 +1021,25 @@ server and deployed URLs could not be verified because deployment targets/config
 **Self-review:** This is reset-on-demand, the documented fallback when pg_cron is not enabled. Frontend error/retry handling is still incomplete because Hisaab has not yet replaced its timer/static flow.
 
 **Time:** ~7 minutes. **Commit:** pending reset commit.
+
+---
+### [2026-07-26 04:28 IST] Scope restoration · evals through README plan
+
+**Goal:** Restore the previously cut evaluation, schema-drift, fixture-refresh, TTS, and final documentation scope in the requested order.
+
+**Plan:** Deliver each section at a commit boundary, with fixture-driven deterministic data wherever live model calls would make UI evaluation unreliable.
+
+**Files touched:** `PLAN.md`, `docs/codex-log.md`.
+
+**Generated:** Section-by-section restoration plan.
+
+**Tests written first:** Required alongside each backend feature.
+
+**Run results:** Plan-only.
+
+**Self-review:** Eval UI uses the existing design tokens and readable data-display conventions; no new color system will be introduced.
+
+**Time:** ~3 minutes. **Commit:** pending scope-restoration plan commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
