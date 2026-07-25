@@ -48,9 +48,56 @@ the intake pipeline.
 
 ## Milestone 2 — deterministic intake and source preservation (Day 2)
 
-Build the document upload path, Supabase Storage helpers, CSV parser, immutable
-extractions, mock router fixtures, and intake-agent events. Add parser and router
-failure-path tests before implementation.
+**Outcome:** CSV, khaata, and invoice intake paths produce immutable
+`extracted_entries`-shaped records for the public demo in `MOCK_MODE=true`, with
+source references, deterministic paise conversion, router fallbacks, and streamed
+bilingual agent progress. This milestone stops before reconciliation, uploads API,
+Storage signed URLs, voice, and exception work.
+
+1. Verify the locally supplied environment files without printing or committing any
+   values. Use `MOCK_MODE=true` for all runnable tests; only record live vision
+   fixtures if sample images and an API key are both available.
+2. Write `test_csv_parser.py` first for PhonePe/GPay/Paytm/bank headers, Hindi
+   headers, empty input, malformed rows, debit/credit split rows, integer-paise
+   amounts, and a guard proving the parser does not leak float amounts into entries.
+3. Implement `backend/intake/csv_parser.py` as pure standard-library Python: normalize
+   header synonyms, parse decimal currency with `Decimal`, select amount/debit/credit,
+   parse common dates, and return typed extraction records with confidence `1.0` and
+   `deterministic_parser` provenance.
+4. Write `test_router_mock.py` first for routing-table coverage, mocked fixture
+   loading, defensive JSON fence stripping, missing/malformed fixture failures, and
+   a non-mock retry/final-`RouterError` path with `model_calls` telemetry.
+5. Implement `backend/model_router.py` as the sole OpenAI import location. Add the
+   §6 routing table, price/call telemetry interface, 30-second timeout, one retry,
+   typed `RouterError`, fixture lookup in `sample_data/fixtures/`, and defensive JSON
+   object parsing. Do not add OpenAI imports elsewhere.
+6. Write intake-agent tests before its implementation, then add
+   `backend/agents/intake_agent.py`: dispatch CSV/khaata/invoice tasks, convert vision
+   rupee values to integer paise, preserve `row_ref` as evidence, build
+   `extracted_entries` rows, and publish bilingual progress events through the existing
+   WebSocket hub.
+7. Create clearly labelled placeholder vision fixtures only because the repository has
+   no `sample_data/` images at plan time. If images and a usable API key appear during
+   implementation, record a real call instead; never silently imply placeholders are
+   live-model results.
+8. Run all backend tests and the frontend typecheck/build (CI continues to invoke
+   pytest). Re-read the diff for forbidden OpenAI imports, float-money leaks, and scope
+   creep; update `docs/codex-log.md`, commit the self-review, and stop.
+
+**Milestone 2 planned files**
+
+- `PLAN.md`, `docs/codex-log.md`
+- `backend/intake/__init__.py`, `backend/intake/types.py`,
+  `backend/intake/csv_parser.py`
+- `backend/model_router.py`, `backend/agents/__init__.py`,
+  `backend/agents/intake_agent.py`
+- `backend/tests/test_csv_parser.py`, `backend/tests/test_router_mock.py`,
+  `backend/tests/test_intake_agent.py`
+- `sample_data/fixtures/vision_khaata.json`,
+  `sample_data/fixtures/vision_invoice.json`, and fixture metadata declaring their
+  placeholder provenance
+- `backend/pyproject.toml` only if a declared OpenAI package is necessary for the
+  non-mock router path; no frontend implementation is planned for this scope.
 
 ## Milestone 3 — reconciliation engine and deterministic tests (Day 3)
 

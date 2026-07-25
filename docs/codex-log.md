@@ -191,3 +191,24 @@ a full Markdown parser to avoid adding unneeded rendering dependencies in Day 1.
 **Cumulative tests:** 3 passed, 0 failed (`MOCK_MODE=true`); frontend typecheck and production build pass.
 
 **Open risks:** Apply migration to a real Supabase project before database validation; local test runner is Python 3.14 while CI is pinned to 3.11.
+
+---
+### [2026-07-26 01:29 IST] Milestone 2 · intake pipeline plan
+
+**Goal:** Specify the narrow Day 2 intake implementation before creating pipeline code.
+
+**Plan:** Build pure CSV normalization first, then mock-safe router infrastructure, then khaata/invoice orchestration with evidence references and bilingual log events. Fixtures will be marked PLACEHOLDER because `sample_data/` is absent.
+
+**Files touched:** `PLAN.md` (modified: detailed Milestone 2 steps and file list), `docs/codex-log.md` (modified: this planning entry), `frontend/.env` (modified locally and ignored: supplied Supabase URL plus local API/WS defaults).
+
+**Generated:** A test-first implementation sequence covering parser edge cases, router failures, vision fixture provenance, and intake-agent dispatch.
+
+**Tests written first:** Scheduled `test_csv_parser.py`, `test_router_mock.py`, and `test_intake_agent.py`; none exist yet because this work unit is the required plan.
+
+**Run results:**
+- Run 1: PASSED — verified backend `.env` is populated without reading its values; `frontend/.env` was empty and now contains the user-supplied Supabase URL without an anonymous key.
+- Run 2: PASSED — `sample_data/` does not exist, so real vision recordings cannot be honestly claimed at plan time.
+
+**Self-review:** The plan deliberately excludes the uploads endpoint and Storage URL helper: patch §30 assigns Storage work to Day 2 broadly, but the explicit scope is CSV/router/vision intake and says stop at extracted entries. The ambiguity is recorded.
+
+**Time:** ~8 minutes. **Commit:** pending plan commit.
