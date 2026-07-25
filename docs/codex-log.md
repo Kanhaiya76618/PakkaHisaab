@@ -678,3 +678,26 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** Re-read every cited endpoint, migration, and component around the findings. The profile discrepancy is a forward-migration concern, and the upload/storage/demo chain is an implementation gap rather than a test failure to mask. M3 work remains stashed and unmodified.
 
 **Time:** ~18 minutes. **Commit:** pending audit baseline commit.
+
+---
+### [2026-07-26 02:27 IST] Audit · fix A2 private-store authorization
+
+**Goal:** Prevent anonymous access to a private store whose owner id is unexpectedly null.
+
+**Plan:** Add a direct dependency-level regression test, retain public-demo behavior, then make ownership authorization require a real authenticated user id exactly as patch §25 specifies.
+
+**Files touched:** `backend/tests/test_authz_api.py` (modified: ownerless private-store regression), `backend/auth.py` (modified: authenticated-user guard), `docs/audit-m2.md` (modified: A2 status), `docs/codex-log.md` (modified).
+
+**Generated:** `test_anonymous_request_cannot_access_private_ownerless_store` and the explicit `user_id is not None` authorization condition.
+
+**Tests written first:** `test_anonymous_request_cannot_access_private_ownerless_store`, asserting HTTP 403 for anonymous access.
+
+**Run results:**
+- Run 1: FAILED — `MOCK_MODE=true .venv/bin/pytest tests/test_authz_api.py -q` — anonymous caller received private ownerless store.
+  → Cause: `None == None` passed the old ownership comparison.
+  → Fix: require a non-null authenticated `user_id` before matching ownership.
+- Run 2: PASSED — 3 passed, 0 failed (one third-party TestClient deprecation warning).
+
+**Self-review:** The condition preserves public demo access and authenticated-owner access while refusing only invalid anonymous ownership equivalence. The database still permits ownerless private rows, but API authorization now fails safely.
+
+**Time:** ~4 minutes. **Commit:** pending A2 commit.

@@ -22,7 +22,7 @@ rewrite.
 
 ### A2 — anonymous callers can own a private, ownerless store
 
-**Severity: BREAKS**
+**Severity: BREAKS — fixed in pending A2 commit**
 
 `[SPEC_PATCH_SUPABASE.md:184-190] → [backend/auth.py:31-37]`
 
@@ -160,4 +160,3 @@ regression; the audit must not delete or weaken those tests.
   backend virtualenv path and failed before pytest started; rerunning from
   `backend/` produced the record above.
 - `npm run typecheck` and `npm run build` in `frontend/` passed.
-

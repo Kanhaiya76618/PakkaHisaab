@@ -32,7 +32,7 @@ async def ensure_authorized_store(store_id: str, user_id: str | None) -> StoreRe
     store = await db.get_store(store_id)  # service-role read, then explicit API gate
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
-    if store.is_public or store.owner_user_id == user_id:
+    if store.is_public or (user_id is not None and store.owner_user_id == user_id):
         return store
     raise HTTPException(status_code=403, detail="You do not have access to this store")
 
