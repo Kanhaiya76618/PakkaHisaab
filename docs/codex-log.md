@@ -916,6 +916,25 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** Evidence now derives from the engine result but persistence and frontend drawer wiring remain open.
 
 **Time:** ~5 minutes. **Commit:** pending evidence API commit.
+
+---
+### [2026-07-26 03:50 IST] M4+5 · requested status baseline
+
+**Goal:** State the exact live-product status before resuming phase work.
+
+**Plan:** Record only verified completed slices and deferred work; do not start a new implementation change before this entry.
+
+**Files touched:** `docs/codex-log.md`.
+
+**Generated:** Status: M3 is committed and accounting identity landed in `177429b`; Phase 1 backend slice is partially complete (live reconcile/ledger/exceptions/resolve/evidence API, process-local state) but Hisaab frontend wiring and persistence are incomplete. Phases 2–6 are not complete. Last full backend run before the evidence test was 45 passing; three focused Phase 1 API tests passed after it, so a fresh full count is pending immediately after this status entry.
+
+**Tests written first:** Existing suite; no new test in this status-only work unit.
+
+**Run results:** No implementation or test command run before this required status record.
+
+**Self-review:** Deferred register remains: Supabase source/extraction/ledger persistence; demo seed/reset and deployment verification; risk/notices; exports/storage; auth/onboarding; query/voice; frontend live wiring. No live Vercel or Render URL has been configured or verified, so none can honestly be recorded.
+
+**Time:** ~2 minutes. **Commit:** pending status baseline commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
