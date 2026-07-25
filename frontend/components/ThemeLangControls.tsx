@@ -17,7 +17,7 @@ export function ThemeLangControls() {
   useEffect(() => {
     const saved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     setTheme(saved);
-    document.documentElement.dataset.theme = saved;
+    document.documentElement.classList.toggle("dark", saved === "dark");
     document.documentElement.lang = lang;
   }, []);
 
@@ -32,7 +32,7 @@ export function ThemeLangControls() {
   function toggleTheme() {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
-    document.documentElement.dataset.theme = next;
+    document.documentElement.classList.toggle("dark", next === "dark");
   }
 
   return <div className="top-controls">
