@@ -221,6 +221,35 @@ Passport delivery work.
 - `backend/main.py` plus a narrow demo reconciliation adapter only after engine tests
   pass; no frontend implementation is planned in this milestone.
 
+### Milestone 3 execution update — deterministic fixture contract
+
+1. Keep `sample_data/fixtures/expected_m3.json` as the single expected-output
+   contract: four exception kinds, hardcoded paise totals, and byte-stable result
+   projection. The e2e test reads this file, so replacing PLACEHOLDER vision data
+   later changes one fixture rather than test logic.
+2. Restore only the paused, uncommitted M3 test-first work after this plan commit;
+   inspect its diff before retaining it. Add missing positive/negative/boundary tests
+   for all five rules and a twice-run deterministic-output assertion before engine code.
+3. Implement immutable engine records plus pure normalization (casefold, honorific
+   stripping, Devanagari transliteration, ISO dates, integer paise), with deterministic
+   sort keys at every tie-break.
+4. Implement and commit strict-priority match rules independently: exact reference,
+   exact amount/date, ±3-day amount, fuzzy party at 0.85, then voice-confirmed.
+5. Implement reconciliation materialization and the four anomaly detectors; persist
+   through a narrow repository adapter only after the pure result passes the fixture
+   e2e contract.
+6. Add the authorized reconcile route and bilingual WebSocket progress; run the full
+   backend suite, static purity scan, frontend checks, and CI-equivalent command.
+
+**Milestone 3 exact files**
+
+- `PLAN.md`, `docs/codex-log.md`, `sample_data/fixtures/expected_m3.json`
+- `backend/engine/__init__.py`, `backend/engine/types.py`, `backend/engine/matchers.py`,
+  `backend/engine/reconciler.py`
+- `backend/tests/test_money.py`, `backend/tests/test_matchers.py`,
+  `backend/tests/test_reconciler_e2e.py`, plus narrow reconcile-route tests
+- `backend/main.py` and a repository adapter only once pure-engine tests pass.
+
 ## Milestone 4 — exception workflow and Evidence Passport (Day 4)
 
 Add constrained exception actions, authorization checks, resolution flow, and

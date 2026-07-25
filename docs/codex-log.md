@@ -747,3 +747,23 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** The route proves the HTTP/intake seam but only retains extracted entries in the existing in-memory repository. It does not yet create `source_documents`, upload bytes, or persist `extracted_entries` in Supabase; those parts remain explicitly open in A3/A4 rather than being represented as complete.
 
 **Time:** ~9 minutes. **Commit:** pending upload-contract commit.
+
+---
+### [2026-07-26 02:45 IST] Milestone 3 · execution plan refresh
+
+**Goal:** Define the deterministic reconciliation work and its fixture-owned expected-output contract before restoring or writing engine code.
+
+**Plan:** Keep the original test-first sequence, add `expected_m3.json` as the only e2e expectation source, and use stable ordering for all engine tie-breaks. The paused M3 WIP will be inspected only after this plan commit.
+
+**Files touched:** `PLAN.md` (modified: detailed M3 steps and exact files), `docs/codex-log.md` (modified).
+
+**Generated:** A fixture-regeneration plan for future real vision extracts, pure-engine boundaries, and route wiring order.
+
+**Tests written first:** Scheduled after this standalone plan commit.
+
+**Run results:**
+- Run 1: PASSED — confirmed the preserved M3 WIP remains recoverable in `stash@{0}`.
+
+**Self-review:** The plan keeps engine logic separate from backend persistence and does not treat prior audit partial fixes as engine completion.
+
+**Time:** ~3 minutes. **Commit:** pending M3 plan refresh commit.
