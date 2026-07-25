@@ -34,7 +34,7 @@ the public demo route and do not exercise this authorization seam.
 
 ### A3 — upload UI has no API, Storage write, source-document row, or intake persistence
 
-**Severity: BREAKS**
+**Severity: BREAKS — partially addressed in pending upload-contract commit; persistence remains open**
 
 `[SPEC.md:253-255,354] → [frontend/components/UploadZone.tsx:10-19] → [backend/main.py:25-54] → [backend/agents/intake_agent.py:45-54,93-118]`
 
@@ -48,7 +48,7 @@ the Day 2 end-to-end intake contract.
 
 ### A4 — required storage helper and path convention are absent
 
-**Severity: BREAKS**
+**Severity: BREAKS — partially addressed in pending upload-contract commit; Supabase object I/O remains open**
 
 `[SPEC_PATCH_SUPABASE.md:197-214,270-276] → [supabase/migrations/20260726010600_initial_schema.sql:42-54,199-207] → [backend/:1]`
 

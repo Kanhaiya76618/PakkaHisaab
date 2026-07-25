@@ -724,3 +724,26 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** The data update occurs before dropping `full_name`; fresh and existing databases converge on the patch contract. A real `supabase db push` remains an external/local-stack verification obligation in the deferred register.
 
 **Time:** ~5 minutes. **Commit:** pending A1 commit.
+
+---
+### [2026-07-26 02:38 IST] Audit · establish upload and storage contracts
+
+**Goal:** Replace the UI-only file selection with a tested multipart API seam and make the required storage key/URL convention executable.
+
+**Plan:** Write contract tests first, add a minimal public-demo upload route that invokes the existing intake agent in MOCK_MODE, and isolate object-key/public-vs-signed URL rules in a storage module. This is intentionally not claimed as the complete persistence fix: real Supabase source/object writes still need their own adapter and test.
+
+**Files touched:** `backend/tests/test_storage_paths.py` (created), `backend/tests/test_authz_api.py` (modified: multipart route contract), `backend/storage.py` (created), `backend/main.py` (modified: upload endpoint), `backend/pyproject.toml` (modified: multipart dependency), `docs/audit-m2.md` (modified: partial status), `docs/codex-log.md` (modified).
+
+**Generated:** `document_storage_path`, `get_document_url`, and `POST /api/stores/{store_id}/uploads` returning `document_id` and parsed entry count for CSV intake.
+
+**Tests written first:** Private/public URL path tests and `test_upload_contract_exists_for_the_public_demo` using a real multipart request.
+
+**Run results:**
+- Run 1: FAILED — focused tests could not import `storage`.
+  → Cause: storage/path helper had not been created, as expected in test-first work.
+  → Fix: added `backend/storage.py` and the multipart route.
+- Run 2: PASSED — 3 passed, 0 failed (one third-party TestClient deprecation warning).
+
+**Self-review:** The route proves the HTTP/intake seam but only retains extracted entries in the existing in-memory repository. It does not yet create `source_documents`, upload bytes, or persist `extracted_entries` in Supabase; those parts remain explicitly open in A3/A4 rather than being represented as complete.
+
+**Time:** ~9 minutes. **Commit:** pending upload-contract commit.
