@@ -1,13 +1,13 @@
 {
   "entries": [
-    {
-      "entry_type": "credit_given",
-      "party_name": "Ramesh",
-      "amount_rupees": 2500,
-      "entry_date": "2026-07-12",
-      "description": "Cash credit written in demo khaata",
-      "row_ref": "page 1, row 1",
-      "confidence": 0.91
-    }
+    {"entry_type": "credit_given", "party_name": "रमेश / Ramesh", "amount_rupees": 2500, "entry_date": "2026-07-12", "description": "उधार दिया / credit", "row_ref": "page 1, row 1", "confidence": 1.0},
+    {"entry_type": "purchase", "party_name": "Gupta Traders", "amount_rupees": 4800, "entry_date": "2026-07-12", "description": "supplier invoice", "row_ref": "page 1, row 2", "confidence": 1.0},
+    {"entry_type": "purchase", "party_name": "Milk Booth", "amount_rupees": 1200, "entry_date": "2026-07-12", "description": "दूध", "row_ref": "page 1, row 3", "confidence": 1.0},
+    {"entry_type": "purchase", "party_name": "Asha Stores", "amount_rupees": 1730, "entry_date": "2026-07-12", "description": "masala stock", "row_ref": "page 1, row 4", "confidence": 1.0},
+    {"entry_type": "sale", "party_name": "Cash Sale", "amount_rupees": 3500, "entry_date": "2026-07-12", "description": "बिक्री", "row_ref": "page 1, row 5", "confidence": 1.0},
+    {"entry_type": "payment_in", "party_name": "Mohan", "amount_rupees": 1000, "entry_date": "2026-07-12", "description": "cash received", "row_ref": "page 1, row 6", "confidence": 1.0},
+    {"entry_type": "payment_out", "party_name": "किराया / Rent", "amount_rupees": 3000, "entry_date": "2026-07-12", "description": "July rent", "row_ref": "page 1, row 7", "confidence": 1.0},
+    {"entry_type": "payment_out", "party_name": "Misc.", "amount_rupees": 1000, "entry_date": "2026-07-12", "description": "छोटा खर्च", "row_ref": "page 1, row 8", "confidence": 1.0},
+    {"entry_type": "note", "party_name": null, "amount_rupees": 18930, "entry_date": "2026-07-12", "description": "written_total", "row_ref": "page 1, written total", "confidence": 1.0}
   ]
 }

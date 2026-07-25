@@ -5,9 +5,9 @@
       "party_name": "Gupta Traders",
       "amount_rupees": 4800,
       "entry_date": "2026-07-12",
-      "description": "Invoice INV-231 placeholder extraction",
-      "row_ref": "page 1, total",
-      "confidence": 0.94
+      "description": "Invoice INV-231",
+      "row_ref": "page 1, grand total",
+      "confidence": 1.0
     }
   ]
 }

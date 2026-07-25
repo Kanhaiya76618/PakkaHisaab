@@ -398,3 +398,156 @@ the patched repository contains SQL migrations, not SQLAlchemy models. The plan 
 that conflict visible and will neither invent models nor silently weaken the check.
 
 **Time:** ~8 minutes. **Commit:** pending plan commit.
+
+---
+### [2026-07-26 01:52 IST] Milestone 2.5 · seam and sample-data tests
+
+**Goal:** Express the cross-file and generated-artifact contract as failing checks
+before modifying implementation or sample files.
+
+**Plan:** Start with migration/draft, fixture/agent, frontend event/environment/design,
+backend import graph, and generator output checks. Separate audit-harness defects from
+real product seams so only the latter drive product changes.
+
+**Files touched:** `backend/tests/test_integration_audit.py` (created),
+`backend/tests/test_sample_data.py` (created), `docs/codex-log.md` (modified: live
+test results).
+
+**Generated:** Eight initial audit tests covering imports, database fields, fixture
+schema, events, environment documentation, token/font rules, import cycles, and all
+required generated demo artifacts.
+
+**Tests written first:** `test_extraction_draft_fields_fit_the_postgres_table`,
+`test_all_runtime_environment_reads_are_documented`,
+`test_backend_local_import_graph_has_no_cycles`, and
+`test_generator_creates_the_specified_ground_truthed_artifacts`, alongside the
+passing seam checks.
+
+**Run results:**
+- Run 1: FAILED — focused audit suite: 4 failed, 4 passed.
+  → Product seam: `ExtractedEntryDraft.upi_ref` has no matching
+  `extracted_entries` migration column, so deterministic UPI evidence cannot persist.
+  → Product fix: add a nullable `upi_ref` column to the migration and include it in
+  the eventual persistence contract.
+  → Audit-harness issue: environment/import graph scans traversed ignored
+  `backend/.venv`, incorrectly treating installed packages and their process
+  environment reads as project code.
+  → Harness fix: exclude dot-directories before evaluating project modules.
+  → Expected test-first absence: `sample_data/generate.py` does not exist yet.
+  → Next: implement the reproducible generator after checking Pillow/font tooling.
+
+**Self-review:** The first seam test caught a real schema drift. The other two audit
+failures are test-harness scope bugs, not grounds to add unrelated environment entries
+or inspect virtualenv code.
+
+**Time:** in progress. **Commit:** pending Milestone 2.5 self-review commit.
+
+---
+### [2026-07-26 01:57 IST] Milestone 2.5 · live vision fixture recording attempt
+
+**Goal:** Replace PLACEHOLDER vision fixtures with one real extraction run per
+generated vision prompt, only because a locally configured API key appeared present.
+
+**Plan:** Load the ignored backend environment without printing it, send only
+`khaata_page_1.jpg` and `gupta_inv_231.jpg` through `model_router.route`, and write
+returned JSON only if both calls succeed. The router's retry policy remains active.
+
+**Files touched:** `docs/codex-log.md` (modified: failure recorded before fallback).
+
+**Generated:** No fixture data; the live recorder intentionally writes only after a
+successful response.
+
+**Tests written first:** Existing router fixture and intake tests protect the fallback
+shape; a ground-truth fixture regression test follows before replacement JSON.
+
+**Run results:**
+- Run 1: FAILED — `vision_khaata` live recording returned OpenAI HTTP 401 twice and
+  `RouterError` after the router retry.
+  → Cause: the local `OPENAI_API_KEY` is the documented placeholder, not a usable key.
+  → Fix: do not retry manually or claim a live fixture. Generate exact-schema,
+  ground-truth-aligned PLACEHOLDER fixtures and retain their provenance label.
+
+**Self-review:** This was an honest attempted recording, not a fabricated result. The
+provider safely rejected the placeholder key; no image extraction result was written.
+
+**Time:** ~2 minutes. **Commit:** pending Milestone 2.5 self-review commit.
+
+---
+### [2026-07-26 02:11 IST] Milestone 2.5 · audit fixes and sample-data self-review
+
+**Goal:** Close the user-verified audit/sample-data milestone without starting
+reconciliation work.
+
+**Plan:** Fix only seams proven by the new checks: make UPI references persistable,
+validate the demo route on the frontend with Zod, generate reproducible assets with an
+open-licensed font, and align fallback fixtures to the source manifest.
+
+**Files touched:** `supabase/migrations/20260726020000_add_extracted_entry_upi_ref.sql`
+(created), `backend/pyproject.toml` (modified: Pillow),
+`backend/tests/test_integration_audit.py`, `backend/tests/test_sample_data.py`
+(created), `frontend/lib/api.ts` (created), `frontend/app/page.tsx` (modified:
+validated demo-store call), `sample_data/generate.py`, `GROUND_TRUTH.md`, generated
+images/CSV/notice, `sample_data/fonts/Kalam-Regular.ttf`, `sample_data/fonts/OFL.txt`,
+and fixture JSON/metadata (created or modified), `docs/codex-log.md` (modified).
+
+**Generated:** Deterministic PIL assets, 60-row PhonePe export, ground-truth manifest,
+real migration for `upi_ref`, Zod response schema for `POST /api/stores/demo`, and
+auditable placeholder fixture rows for all eight khaata entries plus written total.
+
+**Tests written first:** Audit and generator tests preceded implementation; added
+fixture-ground-truth and frontend-Zod seam regressions after their respective missing
+contracts were observed.
+
+**Run results:**
+- Run 1: PASSED — corrected audit suite: 7 passed after the `upi_ref` migration and
+  project-source scoping fixes.
+- Run 2: FAILED — ground-truth fixture regression found the prior khaata fixture had
+  one row rather than the generated page's eight financial rows plus written total.
+  → Fix: regenerated exact-schema PLACEHOLDER fixture values from `GROUND_TRUTH.md`.
+- Run 3: FAILED — frontend route seam had no `lib/api.ts`/Zod schema for the backend
+  demo response.
+  → Fix: added `loadDemoStore` with a strict `store_id`/`is_public`/`is_demo` schema
+  and wired the landing action through it, retaining offline-safe demo navigation.
+- Run 4: PASSED — audit plus generator suite: 9 passed, 0 failed.
+- Run 5: PASSED — FastAPI booted on port 8011 and `/api/health` returned 200;
+  Next.js booted on port 3011 and `/` returned 200. Both local audit servers stopped
+  cleanly afterward.
+- Run 6: BLOCKED/DEFERRED — fresh local Supabase migration execution. The CLI was
+  available; Docker Desktop initially was not running, then image downloads began
+  after it was launched. The stack was not ready before the user directed Milestone 3,
+  so no migration application or table-insert result is claimed.
+- Run 7: PASSED — `MOCK_MODE=true .venv/bin/pytest tests` — 30 passed, 0 failed
+  (one third-party FastAPI TestClient deprecation warning); `npm run typecheck &&
+  npm run build` passed.
+
+**Self-review:** The generator output was visually inspected: the page contains all
+eight bilingual handwritten rows, visible ₹18,930 written total, light paper noise,
+and slight rotation. `engine/` and `risk.py` do not exist yet (Milestone 3 scope), so
+the no-model grep is vacuously clean rather than a substitute for the forthcoming
+engine guard. The fresh-local Supabase apply remains the only audit item not completed
+in this session; the original request's “SQLAlchemy models” wording conflicts with the
+patch's SQL-only Supabase architecture, so no fabricated models were added.
+
+**Time:** ~22 minutes. **Commit:** pending Milestone 2.5 self-review commit.
+
+---
+## Milestone 2.5 Summary
+
+**Shipped:** Executable import/contract/env/design audits, a forward `upi_ref`
+migration, frontend demo-response validation, reproducible PIL sample artifacts with
+bundled Kalam/OFL, generated ground truth, and fixture values aligned to that truth.
+
+**PLACEHOLDER:** Both vision fixtures remain PLACEHOLDER. A real recording was
+attempted exactly once per required path but safely failed because the configured API
+key is invalid; no live result is claimed.
+
+**Deferred:** Fresh local Supabase migration application/table-insert smoke due to
+the local image pull not finishing before the user directed Milestone 3. Its original
+SQLAlchemy-model phrasing is also superseded by the patch's SQL migration contract.
+
+**Cumulative tests:** 30 passed, 0 failed in `MOCK_MODE=true`; frontend typecheck and
+production build pass.
+
+**Open risks:** Replace the local placeholder OpenAI key to re-record vision fixtures;
+complete the local Supabase startup then run the real migration/insert smoke before
+deployment validation.
