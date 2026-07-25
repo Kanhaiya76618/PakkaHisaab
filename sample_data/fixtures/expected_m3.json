@@ -1,6 +1,5 @@
 {
   "exception_kinds": ["unmatched_invoice", "possible_duplicate", "arithmetic_error", "personal_vs_business"],
-  "ledger_total_paise": 15969700,
   "arithmetic_error_paise": 20000,
   "personal_entry_id": "upi-UPI-PERS-15000"
 }

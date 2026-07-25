@@ -834,6 +834,25 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** Engine has no network/model imports and money fields remain ints. The M3 seeded total contract is retained from the existing hardcoded expectation; its derivation should be documented/refactored before treating the engine as financial-production ready.
 
 **Time:** ~18 minutes. **Commit:** pending M3 completion commit.
+
+---
+### [2026-07-26 03:22 IST] Milestone 3 · derive ledger totals
+
+**Goal:** Replace the opaque seeded ledger total with a documented accounting identity.
+
+**Plan:** Put net cashflow and party-balance formulas in a pure engine module; have reconciliation and golden generation consume the formula; independently recompute it in e2e.
+
+**Files touched:** `backend/engine/accounting.py`, `backend/engine/reconciler.py`, `backend/tests/test_reconciler_e2e.py`, `sample_data/fixtures/expected_m3.json`, `sample_data/fixtures/golden_m3.json`, `docs/codex-log.md`.
+
+**Generated:** Documented inflow/outflow identity and party-balance helper; golden data regenerated from code.
+
+**Tests written first:** E2E independently recomputes `store_total_paise` from ledger entries.
+
+**Run results:** PASSED — regenerated golden fixture, then 45 backend tests passed.
+
+**Self-review:** No fixture now supplies a ledger total; only exception expectations remain declarative.
+
+**Time:** ~6 minutes. **Commit:** pending accounting-identity commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 

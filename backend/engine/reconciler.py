@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from engine.matchers import match_entries
+from engine.accounting import store_total_paise
 from engine.types import Entry, EntryMatch, ExceptionRecord, ReconciliationResult
 
 
@@ -45,7 +46,8 @@ def reconcile(entries: list[Entry]) -> ReconciliationResult:
         if entry.personal:
             exceptions.append(ExceptionRecord("personal_vs_business", (entry.id,), entry.amount_paise))
     unmatched = tuple(item.id for item in ordered if item.id not in used)
-    return ReconciliationResult(tuple(ordered), tuple(matches), tuple(exceptions), unmatched, sum(item.amount_paise for item in ordered))
+    ledger_entries = tuple(ordered)
+    return ReconciliationResult(ledger_entries, tuple(matches), tuple(exceptions), unmatched, store_total_paise(ledger_entries))
 
 
 def reconcile_sample_data(root: Path) -> ReconciliationResult:
@@ -68,4 +70,4 @@ def reconcile_sample_data(root: Path) -> ReconciliationResult:
     result = reconcile(entries)
     exceptions = [ExceptionRecord("unmatched_invoice", ("invoice-INV-231",)), *result.exceptions, ExceptionRecord("arithmetic_error", ("khaata-page-1",), abs(written_total-row_total))]
     order = {"unmatched_invoice": 0, "possible_duplicate": 1, "arithmetic_error": 2, "personal_vs_business": 3}
-    return ReconciliationResult(result.ledger_entries, result.matches, tuple(sorted(exceptions, key=lambda x: order[x.kind])), result.unmatched_ids, 15_969_700)
+    return ReconciliationResult(result.ledger_entries, result.matches, tuple(sorted(exceptions, key=lambda x: order[x.kind])), result.unmatched_ids, store_total_paise(result.ledger_entries))
