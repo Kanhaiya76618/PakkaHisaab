@@ -1059,6 +1059,25 @@ server and deployed URLs could not be verified because deployment targets/config
 **Self-review:** This is intentionally a backend slice only; model-call costs, counterfactual fixtures, and the eval UI are still open and are not represented as complete.
 
 **Time:** ~7 minutes. **Commit:** pending evaluator backend commit.
+
+---
+### [2026-07-26 04:45 IST] Frontend · TypeScript deprecation cleanup
+
+**Goal:** Remove the two editor-reported TypeScript 7 deprecation warnings.
+
+**Plan:** Raise the obsolete ES5 target to ES2017 and remove unnecessary `baseUrl`; preserve the existing bundler alias paths.
+
+**Files touched:** `frontend/tsconfig.json`, `docs/codex-log.md`.
+
+**Generated:** Modern target configuration without deprecated compiler options.
+
+**Tests written first:** Existing frontend typecheck.
+
+**Run results:** PASSED — `npm run typecheck` and `tsc --showConfig` passed.
+
+**Self-review:** `paths` remain relative to `tsconfig.json` with bundler module resolution, so the `@/*` imports stay valid.
+
+**Time:** ~2 minutes. **Commit:** pending TypeScript config commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
