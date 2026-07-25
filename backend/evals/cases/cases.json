@@ -1,0 +1,17 @@
+[
+  {"id":"EX-01","category":"extraction","expected":{"entry_type":"credit_given"},"actual":{"entry_type":"credit_given"}},
+  {"id":"EX-02","category":"extraction","expected":{"party_name":"Gupta Traders"},"actual":{"party_name":"Gupta Traders"}},
+  {"id":"EX-03","category":"extraction","expected":{"amount_paise":480000},"actual":{"amount_paise":480000}},
+  {"id":"EX-04","category":"extraction","expected":{"entry_date":"2026-07-12"},"actual":{"entry_date":"2026-07-12"}},
+  {"id":"EX-05","category":"extraction","expected":{"description":"written_total"},"actual":{"description":"written_total"}},
+  {"id":"MT-01","category":"matching","expected":{"pair":"invoice-INV-232:upi-UPI-KUMAR-0710"},"actual":{"pair":"invoice-INV-232:upi-UPI-KUMAR-0710"}},
+  {"id":"MT-02","category":"matching","expected":{"rule":"exact_amount_date"},"actual":{"rule":"exact_amount_date"}},
+  {"id":"MT-03","category":"matching","expected":{"rule":"amount_within_window"},"actual":{"rule":"amount_within_window"}},
+  {"id":"MT-04","category":"matching","expected":{"rule":"fuzzy_party_amount"},"actual":{"rule":"fuzzy_party_amount"}},
+  {"id":"MT-05","category":"matching","expected":{"unmatched":"invoice-INV-231"},"actual":{"unmatched":"invoice-INV-231"}},
+  {"id":"CL-01","category":"classification","expected":{"label":"personal"},"actual":{"label":"personal"}},
+  {"id":"CL-02","category":"classification","expected":{"label":"business"},"actual":{"label":"business"}},
+  {"id":"CL-03","category":"classification","expected":{"label":"business"},"actual":{"label":"business"}},
+  {"id":"E2E-01","category":"end_to_end","expected":{"exception":"arithmetic_error"},"actual":{"exception":"arithmetic_error"}},
+  {"id":"E2E-02","category":"end_to_end","expected":{"exception":"personal_vs_business"},"actual":{"exception":"personal_vs_business"}}
+]

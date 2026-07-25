@@ -17,6 +17,7 @@ from events import agent_log_hub
 from agents.intake_agent import InMemoryExtractionRepository, IntakeAgent, SourceDocument, websocket_emitter
 from engine.reconciler import reconcile_sample_data
 from events import AgentLogEvent
+from evals.runner import run as run_evals
 
 
 app = FastAPI(title="PakkaHisaab API", version="0.1.0")
@@ -47,6 +48,11 @@ async def _stage(store_id: str, agent: str, message_en: str, message_hi: str) ->
 async def health() -> dict[str, object]:
     settings = get_settings()
     return {"status": "ok", "service": "pakkahisaab-api", "mock_mode": settings.mock_mode}
+
+
+@app.get("/api/evals/run")
+async def evals_run() -> dict[str, object]:
+    return run_evals()
 
 
 @app.post("/api/stores/demo")

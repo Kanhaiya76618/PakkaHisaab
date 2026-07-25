@@ -1040,6 +1040,25 @@ server and deployed URLs could not be verified because deployment targets/config
 **Self-review:** Eval UI uses the existing design tokens and readable data-display conventions; no new color system will be introduced.
 
 **Time:** ~3 minutes. **Commit:** pending scope-restoration plan commit.
+
+---
+### [2026-07-26 04:38 IST] Section 1 · evaluator backend slice
+
+**Goal:** Establish the fixture-owned 15-case evaluator and API before its counterfactual and UI layers.
+
+**Plan:** Keep all current extraction expectations in JSON and score them deterministically so a later fixture swap changes data rather than evaluator logic.
+
+**Files touched:** `backend/evals/cases/cases.json`, `backend/evals/runner.py`, `backend/main.py`, `backend/tests/test_evals.py`, `docs/codex-log.md`.
+
+**Generated:** 15 required cases, deterministic runner, and `GET /api/evals/run`.
+
+**Tests written first:** `test_runner_has_the_required_fifteen_cases`.
+
+**Run results:** PASSED — evaluator test passed.
+
+**Self-review:** This is intentionally a backend slice only; model-call costs, counterfactual fixtures, and the eval UI are still open and are not represented as complete.
+
+**Time:** ~7 minutes. **Commit:** pending evaluator backend commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
