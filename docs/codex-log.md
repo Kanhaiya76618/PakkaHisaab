@@ -894,6 +894,28 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** Earlier “Phase 1” was only a backend slice, not full Phase 1. This entry corrects the record and prevents overstating completion.
 
 **Time:** ~6 minutes. **Commit:** pending completion-audit plan commit.
+
+---
+### [2026-07-26 03:44 IST] Phase 1 · live evidence endpoint
+
+**Goal:** Close the missing Evidence Passport backend seam using current reconciliation output.
+
+**Plan:** Add a black-box API contract first, then assemble sources and match links from the actual in-memory live run.
+
+**Files touched:** `backend/main.py`, `backend/tests/test_reconcile_api.py`, `docs/codex-log.md`.
+
+**Generated:** `GET /api/ledger-entries/{id}/evidence` returns live source and match records.
+
+**Tests written first:** `test_evidence_is_assembled_from_live_reconciliation_state`.
+
+**Run results:**
+- Run 1: FAILED — evidence route returned 404 because it was absent.
+  → Fix: added live state lookup and evidence assembly.
+- Run 2: PASSED — 3 Phase 1 API tests passed.
+
+**Self-review:** Evidence now derives from the engine result but persistence and frontend drawer wiring remain open.
+
+**Time:** ~5 minutes. **Commit:** pending evidence API commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 

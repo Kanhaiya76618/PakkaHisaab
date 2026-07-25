@@ -114,6 +114,19 @@ async def resolve_exception(exception_id: str, body: ResolveRequest) -> dict[str
     raise HTTPException(404, "Exception not found")
 
 
+@app.get("/api/ledger-entries/{ledger_entry_id}/evidence")
+async def ledger_evidence(ledger_entry_id: str) -> dict[str, object]:
+    for store_id, state in reconciliation_state.items():
+        result = state["result"]
+        entry = next((item for item in result.ledger_entries if item.id == ledger_entry_id), None)
+        if not entry:
+            continue
+        await ensure_authorized_store(store_id, None)
+        linked = [asdict(match) for match in result.matches if ledger_entry_id in {match.left_id, match.right_id}]
+        return {"ledger_entry_id": ledger_entry_id, "store_id": store_id, "sources": [{"source_id": entry.source_id, "entry_id": entry.id, "entry_type": entry.entry_type}], "matches": linked}
+    raise HTTPException(404, "Ledger entry not found")
+
+
 @app.websocket("/ws/stores/{store_id}/agent-log")
 async def stream_agent_log(websocket: WebSocket, store_id: str) -> None:
     try:
