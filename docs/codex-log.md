@@ -8,6 +8,7 @@
 | 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | 8c2fae3 |
 | 2026-07-26 | 2.5 | Integration audit and sample-data plan | Complete | 0 | 9cea175 |
 | 2026-07-26 | 2.5 | Audit and sample data | Complete | 5 | 7a9e3d8 |
+| 2026-07-26 | Audit | Pre-M3 integration audit plan | Complete | 0 | pending plan commit |
 | 2026-07-26 | 3 | Deterministic engine plan | Complete | 0 | pending plan commit |
 
 ## Historical context
@@ -585,6 +586,37 @@ as the deterministic exception and retain the other three as personal source fac
 avoiding invention of three extra exception kinds.
 
 **Time:** ~4 minutes. **Commit:** pending plan commit.
+
+---
+### [2026-07-26 02:26 IST] Integration audit · plan
+
+**Goal:** Establish a read-only, evidence-backed contract baseline before resuming
+Milestone 3.
+
+**Plan:** Trace every requested seam into `docs/audit-m2.md`, record source and
+consumer lines plus severity, then commit that baseline before making fixes. The
+uncommitted matcher foundation is preserved in a named Git stash so audit commits do
+not silently mix work from two milestones.
+
+**Files touched:** `PLAN.md` (modified: standalone audit steps/files),
+`docs/codex-log.md` (modified: plan table and entry).
+
+**Generated:** Audit workflow covering frontend/backend route shapes, WebSocket,
+router/fixtures, migration/RLS/writes, env/import graphs, test-realism, and the full
+Milestone 1–2 deferred register.
+
+**Tests written first:** None in the read-only baseline step; finding-specific
+contract tests will precede each BREAKS/DRIFT fix.
+
+**Run results:**
+- Run 1: PASSED — paused `backend/engine/` and its uncommitted log entry were saved
+  recoverably as `stash@{{0}}` before audit planning.
+
+**Self-review:** Stashing only agent-created WIP preserves user changes and honors the
+request to audit before Milestone 3 rather than continuing it. The audit will not
+claim the still-unfinished local Supabase migration smoke from Milestone 2.5 passed.
+
+**Time:** ~3 minutes. **Commit:** pending audit-plan commit.
 
 ---
 ### [2026-07-26 02:18 IST] Milestone 3 · complete failing engine suite

@@ -150,6 +150,36 @@ PLACEHOLDERs. This milestone stops before reconciliation-engine implementation.
 - only the backend/frontend/config files directly implicated by a verified seam
   mismatch.
 
+## Integration audit — pre-Milestone 3 contract review
+
+**Outcome:** `docs/audit-m2.md` is a traceable, read-only baseline of every
+Milestone 1–2 cross-file seam and deferred obligation. Only after the baseline is
+committed will each BREAKS/DRIFT item be fixed with its own regression test and small
+commit. The paused Milestone 3 matcher WIP remains outside this audit until close-out.
+
+1. Read-only trace frontend HTTP and WebSocket consumers against FastAPI producers;
+   router task/fixture/intake names; database schema/policies against writes;
+   environment reads against examples; imports; test coverage; and the `DESIGN.md`
+   token/font requirements. Record every finding as source→consumer line references
+   and severity, without fixing code in this step.
+2. Create `docs/audit-m2.md` with numbered BREAKS, DRIFT, and SMELL findings plus a
+   Deferred Register. Include every Milestone 1–2 deferral and explicitly assign the
+   patch §30 Day 2 Storage path convention/signed URL work to its appropriate later
+   milestone.
+3. Commit the audit baseline separately. Then fix BREAKS and DRIFT items in
+   source-of-truth order (SPEC, patch, DESIGN), adding a contract test before each
+   fix and using one scoped commit per finding/group. Do not weaken existing tests.
+4. Run backend tests, frontend typecheck/build, static no-model/no-float/token scans,
+   and entrypoint checks. Leave only justified SMELL items and deferred obligations in
+   the final audit; summarize counts and stop before resuming Milestone 3.
+
+**Integration audit planned files**
+
+- `PLAN.md`, `docs/codex-log.md`, `docs/audit-m2.md`
+- narrow contract regression tests under `backend/tests/` only when an audit finding
+  exposes an untested BREAKS seam
+- only the producer/consumer files directly named by an audit finding.
+
 ## Milestone 3 — deterministic reconciliation engine (Day 3)
 
 **Outcome:** a model-free, deterministic engine reconciles the generated demo inputs
