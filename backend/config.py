@@ -18,6 +18,7 @@ class Settings:
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     mock_mode: bool = os.getenv("MOCK_MODE", "false").lower() == "true"
     demo_store_id: str = os.getenv("DEMO_STORE_ID", DEMO_STORE_ID)
+    frontend_origin: str = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
 
 
 def get_settings() -> Settings:

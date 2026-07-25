@@ -11,7 +11,8 @@ type ConnectionState = "connecting" | "live" | "reconnecting" | "offline";
 type AgentLog = { id: string; time: string; agent: string; level: LogLevel; message_en: string; message_hi: string; detail: string | null };
 
 function websocketUrl(storeId: string) {
-  const configured = process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const configured = process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || (process.env.NODE_ENV !== "production" ? "http://localhost:8000" : "");
+  if (!configured) throw new Error("NEXT_PUBLIC_WS_URL or NEXT_PUBLIC_API_URL is required in production.");
   const base = configured.replace(/^http/, "ws").replace(/\/$/, "");
   return `${base}/ws/stores/${storeId}/agent-log`;
 }

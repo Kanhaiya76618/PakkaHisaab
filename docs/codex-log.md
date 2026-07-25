@@ -979,6 +979,29 @@ server and deployed URLs could not be verified because deployment targets/config
 **Self-review:** Railway is the backend target; no Render configuration will be introduced.
 
 **Time:** ~2 minutes. **Commit:** pending Section A plan commit.
+
+---
+### [2026-07-26 04:08 IST] Section A · Railway + Vercel deploy readiness
+
+**Goal:** Make manual Railway/Vercel deployment deterministic and production-safe.
+
+**Plan:** Use Railway config-as-code at the backend root, dynamic Railway port/healthcheck, environment-driven CORS, production URL guards, and a dashboard runbook.
+
+**Files touched:** `backend/railway.toml`, `backend/runtime.txt`, `backend/config.py`, `backend/main.py`, `frontend/lib/api.ts`, `frontend/components/AgentTerminal.tsx`, `.env.example`, `DEPLOY.md`, `docs/codex-log.md`.
+
+**Generated:** Railway start/health configuration, Python 3.11 declaration, `FRONTEND_ORIGIN` CORS setting, production API/WS URL guards, and Railway/Vercel deployment instructions.
+
+**Tests written first:** Existing backend environment-contract test and frontend production build.
+
+**Run results:**
+- Run 1: FAILED — environment-contract test found undocumented `NODE_ENV`.
+  → Cause: production URL guards introduced the standard Next environment read without documenting it.
+  → Fix: documented `NODE_ENV` in `.env.example`.
+- Run 2: PASSED — 48 backend tests, frontend typecheck, and production build passed.
+
+**Self-review:** Config intentionally contains no domain or secret. Railway/Vercel deployment and live URL recording require the user’s account action; runbook names the exact handoff.
+
+**Time:** ~10 minutes. **Commit:** pending Section A commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 

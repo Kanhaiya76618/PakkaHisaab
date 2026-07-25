@@ -7,7 +7,10 @@ const DemoStoreResponse = z.object({
 });
 
 function apiBaseUrl() {
-  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+  const configured = process.env.NEXT_PUBLIC_API_URL;
+  if (configured) return configured.replace(/\/$/, "");
+  if (process.env.NODE_ENV !== "production") return "http://localhost:8000";
+  throw new Error("NEXT_PUBLIC_API_URL is required in production.");
 }
 
 export async function loadDemoStore(): Promise<z.infer<typeof DemoStoreResponse>> {
