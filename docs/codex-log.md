@@ -935,6 +935,31 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** Deferred register remains: Supabase source/extraction/ledger persistence; demo seed/reset and deployment verification; risk/notices; exports/storage; auth/onboarding; query/voice; frontend live wiring. No live Vercel or Render URL has been configured or verified, so none can honestly be recorded.
 
 **Time:** ~2 minutes. **Commit:** pending status baseline commit.
+
+### Final gap-closure audit table — 2026-07-26
+
+| Item | Status | Evidence |
+|---|---|---|
+| Vision extraction | PARTIAL | PLACEHOLDER fixtures; real key recording failed earlier. |
+| CSV parser | VERIFIED-WORKING | Parser tests pass. |
+| Reconcile + WS stages | PARTIAL | Local reconcile executes; stage events exist, WS-stage test absent. |
+| Ledger UI | PARTIAL | Backend live; UI still static/timer-driven. |
+| Exceptions + resolve | VERIFIED-WORKING | Local API smoke passed. |
+| Evidence Passport drawer | PARTIAL | Live API exists; drawer remains static. |
+| Demo store + reset | PARTIAL | Local demo/reconcile works; no reset. |
+| Deployed frontend/backend URLs | MISSING | No deployment config or live URL. |
+| Frontend/backend/Supabase live connectivity | MISSING | No deployed configuration or verification. |
+| Risk radar / notice drafter / CSV export / PDF pack | MISSING | No live APIs. |
+| Storage buckets + signed URLs | PARTIAL | SQL/path helper only; no real upload persistence. |
+| Login + protection | PARTIAL | UI/middleware exists; unverified live. |
+| Onboarding / §29 sweep / Hindi Q&A / voice / schema drift | MISSING | Not implemented end-to-end. |
+| Eval page | PARTIAL | Static presentation only. |
+| i18n / four UI states / mobile | PARTIAL | Design scaffolding exists; no complete page audit. |
+
+**Audit run:** 48 backend tests passed; frontend typecheck and production build passed.
+Local `GET /health`, `POST /stores/demo`, `POST /reconcile`, `GET /ledger`, and
+`GET /exceptions` returned success against the demo store. Local server booted; frontend
+server and deployed URLs could not be verified because deployment targets/configuration are absent.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
