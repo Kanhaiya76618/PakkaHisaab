@@ -5,7 +5,7 @@
 | 2026-07-26 | 1 | Contract intake and full-project plan | Complete | 0 | ff69528 |
 | 2026-07-26 | 1 | Day 1 implementation and verification | Complete | 4 | edf9d23 |
 | 2026-07-26 | 2 | Intake pipeline plan | Complete | 0 | 1281749 |
-| 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | pending self-review commit |
+| 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | 8c2fae3 |
 
 ## Historical context
 
@@ -282,7 +282,7 @@ and one retry. Intake tests require demo-store extraction rows and event text.
 non-money scalar. The invoice prompt has no verbatim text in §7.1, so tests assert the
 published JSON schema and evidence semantics rather than inventing a hidden prompt.
 
-**Time:** ~10 minutes. **Commit:** pending Milestone 2 self-review commit.
+**Time:** ~10 minutes. **Commit:** `8c2fae3` milestone 2: intake pipeline (self-reviewed).
 
 ---
 ### [2026-07-26 01:39 IST] Milestone 2 · intake implementation and self-review
@@ -337,7 +337,7 @@ Supabase `extracted_entries` writes because the requested Day 2 scope stops at i
 outputs and no upload contract was included. The invoice system prompt is a documented
 schema-aligned interpretation because §7.1 only supplies a verbatim khaata prompt.
 
-**Time:** ~10 minutes. **Commit:** pending Milestone 2 self-review commit.
+**Time:** ~10 minutes. **Commit:** `8c2fae3` milestone 2: intake pipeline (self-reviewed).
 
 ---
 ## Milestone 2 Summary
