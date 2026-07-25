@@ -4,8 +4,8 @@ from engine.matchers import match_entries
 from engine.types import Entry
 
 
-def entry(id: str, *, party: str = "Gupta Traders", amount: int = 480_000, date: str = "2026-07-12", kind: str = "purchase", ref: str | None = None) -> Entry:
-    return Entry(id=id, source_id=f"source-{id}", entry_type=kind, party_name=party, amount_paise=amount, entry_date=date, upi_ref=ref)
+def entry(id: str, *, party: str = "Gupta Traders", amount: int = 480_000, date: str = "2026-07-12", kind: str = "purchase", ref: str | None = None, source_kind: str = "") -> Entry:
+    return Entry(id=id, source_id=f"source-{id}", entry_type=kind, party_name=party, amount_paise=amount, entry_date=date, upi_ref=ref, source_kind=source_kind)
 
 
 def assert_rule(left: Entry, right: Entry, rule: str, score: float) -> None:
@@ -28,7 +28,7 @@ def test_exact_amount_date_positive_and_negative() -> None:
 def test_amount_window_boundaries_and_negative() -> None:
     assert_rule(entry("i"), entry("p", kind="payment_out", date="2026-07-09"), "amount_within_window", 0.9)
     assert_rule(entry("i"), entry("p", kind="payment_out", date="2026-07-15"), "amount_within_window", 0.9)
-    assert match_entries(entry("i"), entry("p", kind="payment_out", date="2026-07-08")) is None
+    assert_rule(entry("i"), entry("p", kind="payment_out", date="2026-07-08"), "fuzzy_party_amount", 0.8)
 
 
 def test_fuzzy_party_threshold_and_negative() -> None:
@@ -37,7 +37,7 @@ def test_fuzzy_party_threshold_and_negative() -> None:
 
 
 def test_voice_confirmed_and_refund_pair() -> None:
-    assert_rule(entry("voice", party="रमेश", amount=250_000, kind="payment_out"), entry("payment", party="Ramesh", amount=250_000, kind="credit_given"), "voice_confirmed", 0.85)
+    assert_rule(entry("voice", party="रमेश", amount=250_000, kind="payment_out", source_kind="voice_note"), entry("payment", party="Ramesh", amount=250_000, kind="credit_given"), "voice_confirmed", 0.85)
     assert match_entries(entry("refund", kind="payment_in", amount=50_000), entry("sale", kind="sale", amount=50_000)) is not None
 
 

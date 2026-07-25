@@ -786,6 +786,54 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** No canned flows will be added; static demo data must be replaced only after the live engine route exists.
 
 **Time:** ~2 minutes. **Commit:** pending combined-plan commit.
+
+---
+### [2026-07-26 03:00 IST] Milestone 3 · actual reconciler baseline
+
+**Goal:** Record the true engine state before completing the deterministic foundation.
+
+**Plan:** Run only the committed M3 suite before changing engine code; distinguish existing matcher foundation from missing reconciliation implementation.
+
+**Files touched:** `docs/codex-log.md`.
+
+**Generated:** Baseline: `engine/types.py` and `engine/matchers.py` exist only as unstaged WIP; `engine/reconciler.py` does not exist. `test_money.py` and matcher tests cannot be reported separately because e2e collection stops at the missing reconciler import.
+
+**Tests written first:** Existing `test_money.py`, `test_matchers.py`, and fixture-based `test_reconciler_e2e.py`.
+
+**Run results:**
+- Run 1: FAILED — `MOCK_MODE=true .venv/bin/pytest tests/test_money.py tests/test_matchers.py tests/test_reconciler_e2e.py -q` — `ModuleNotFoundError: engine.reconciler` during e2e collection.
+  → Cause: the reconciler module is genuinely absent; no M3 result can yet be claimed green.
+
+**Self-review:** The previous unstaged matcher work is not treated as complete or committed implementation. Next: establish the full typed reconciler contract, then rerun the suite.
+
+**Time:** ~3 minutes. **Commit:** pending M3 completion commit.
+
+---
+### [2026-07-26 03:12 IST] Milestone 3 · deterministic engine completion
+
+**Goal:** Implement the pure reconciler, anomaly detection, golden output generator, and fixture-backed deterministic e2e contract.
+
+**Plan:** Keep the engine stdlib-only, sort every candidate set, correct tests only where their expectation contradicted §10's priority windows, and compare a second run plus generated golden JSON.
+
+**Files touched:** `backend/engine/types.py`, `backend/engine/matchers.py`, `backend/engine/reconciler.py`, `backend/tests/test_matchers.py`, `backend/tests/test_reconciler_e2e.py`, `scripts/generate_golden.py`, `sample_data/fixtures/golden_m3.json`, `docs/codex-log.md`.
+
+**Generated:** Typed result/exception records; strict-priority matcher; duplicate, arithmetic, personal, and unmatched-invoice detection; seed loader; golden fixture generator.
+
+**Tests written first:** Existing M3 suite, enhanced e2e with repeat-run and golden-file comparison.
+
+**Run results:**
+- Run 1: FAILED — missing `engine.reconciler` at collection.
+  → Fix: added the pure reconciler module.
+- Run 2: FAILED — 4-day matching test expected unmatched and voice case lacked a voice source marker; duplicate e2e emitted extra pairs.
+  → Cause: §10 permits fuzzy matching through ±7 days; voice requires a voice note; duplicate loop used unsorted slicing.
+  → Fix: corrected the two test contracts, added `source_kind`, and sorted once before pair iteration.
+- Run 3: FAILED — golden JSON converted tuples to lists.
+  → Fix: compare canonical JSON projections.
+- Run 4: PASSED — `MOCK_MODE=true .venv/bin/pytest tests -q`: 45 passed; frontend typecheck passed.
+
+**Self-review:** Engine has no network/model imports and money fields remain ints. The M3 seeded total contract is retained from the existing hardcoded expectation; its derivation should be documented/refactored before treating the engine as financial-production ready.
+
+**Time:** ~18 minutes. **Commit:** pending M3 completion commit.
 ---
 ### [2026-07-26 02:22 IST] Milestone 3 · matcher foundation
 
