@@ -3,7 +3,7 @@
 | Date | Milestone | Task | Outcome | Fix cycles | Commit |
 |------|-----------|------|---------|-----------|--------|
 | 2026-07-26 | 1 | Contract intake and full-project plan | Complete | 0 | ff69528 |
-| 2026-07-26 | 1 | Day 1 implementation and verification | Complete pending self-review | 4 | pending |
+| 2026-07-26 | 1 | Day 1 implementation and verification | Complete | 4 | edf9d23 |
 
 ## Historical context
 
@@ -56,7 +56,7 @@
 
 **Self-review:** Tests are contract-focused and need no Supabase credentials.
 
-**Time:** ~10 minutes. **Commit:** pending implementation commit.
+**Time:** ~10 minutes. **Commit:** `edf9d23` build milestone 1 foundation.
 ---
 
 ### [2026-07-26 01:06 IST] Milestone 1 · FastAPI service and Supabase foundation
@@ -79,7 +79,7 @@
 
 **Self-review:** Service-role access remains backend-only; scoped tables use direct `store_id` for RLS.
 
-**Time:** ~12 minutes. **Commit:** pending implementation commit.
+**Time:** ~12 minutes. **Commit:** `edf9d23` build milestone 1 foundation.
 ---
 
 ### [2026-07-26 01:08 IST] Milestone 1 · live Agent Terminal and Supabase browser shell
@@ -103,7 +103,7 @@
 
 **Self-review:** Browser code uses only public keys and reports missing Supabase variables; legacy mock content is outside Day 1 scope.
 
-**Time:** ~10 minutes. **Commit:** pending implementation commit.
+**Time:** ~10 minutes. **Commit:** `edf9d23` build milestone 1 foundation.
 ---
 
 ### [2026-07-26 01:11 IST] Milestone 1 · local boot and live-stream verification
@@ -128,7 +128,7 @@
 
 **Self-review:** No secrets were used. Provider enablement and redirect URLs are external Supabase dashboard tasks; no intake pipeline work started.
 
-**Time:** ~8 minutes. **Commit:** pending self-review commit.
+**Time:** ~8 minutes. **Commit:** `edf9d23` build milestone 1 foundation.
 ---
 
 ### [2026-07-26 01:16 IST] Milestone 1 · self-review correction
@@ -159,7 +159,27 @@
 the redundant closed-launcher connection. The markdown is rendered as text rather than
 a full Markdown parser to avoid adding unneeded rendering dependencies in Day 1.
 
-**Time:** in progress. **Commit:** pending self-review commit.
+**Time:** ~3 minutes. **Commit:** `edf9d23` build milestone 1 foundation.
+---
+
+### [2026-07-26 01:19 IST] Milestone 1 · log and commit reconciliation
+
+**Goal:** Reconcile the continuously written build log with the completed self-review commit.
+
+**Plan:** Record the actual implementation commit hash after it exists; no implementation files change.
+
+**Files touched:** `docs/codex-log.md` (modified: commit references and outcome table).
+
+**Generated:** Final, git-reconcilable Milestone 1 commit references.
+
+**Tests written first:** No code changed; prior final run remains 3 pytest passes plus a successful frontend production build.
+
+**Run results:**
+- Run 1: PASSED — `git log --oneline -3` confirms `edf9d23` follows the standalone plan commit `ff69528`.
+
+**Self-review:** This documentation-only commit preserves the required plan → implementation → self-review history without inventing a commit hash before it existed.
+
+**Time:** ~1 minute. **Commit:** pending log-reconciliation commit.
 ---
 
 ## Milestone 1 Summary
