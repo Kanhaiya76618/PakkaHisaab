@@ -66,6 +66,14 @@ def test_extraction_draft_fields_fit_the_postgres_table() -> None:
     assert persisted <= columns
 
 
+def test_profile_schema_matches_supabase_patch_contract() -> None:
+    sql = "\n".join(path.read_text(encoding="utf-8") for path in sorted(MIGRATIONS.glob("*.sql")))
+    assert "display_name text" in sql
+    assert "preferred_lang text not null default 'hi'" in sql
+    assert "check (preferred_lang in ('hi', 'en'))" in sql
+    assert "insert into public.profiles (id, display_name)" in sql
+
+
 def test_router_fixture_shape_matches_intake_contract() -> None:
     fixture_dir = ROOT / "sample_data" / "fixtures"
     expected = {"entry_type", "party_name", "amount_rupees", "entry_date", "description", "row_ref", "confidence"}

@@ -9,7 +9,7 @@ subsequent fix commit references the item ID.
 
 ### A1 — profile schema does not implement the patch
 
-**Severity: DRIFT**
+**Severity: DRIFT — fixed in pending A1 commit**
 
 `[SPEC_PATCH_SUPABASE.md:65-83] → [supabase/migrations/20260726010600_initial_schema.sql:22-28,138-146]`
 

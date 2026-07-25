@@ -701,3 +701,26 @@ ground truth. No test was weakened to permit a model call or float amount.
 **Self-review:** The condition preserves public demo access and authenticated-owner access while refusing only invalid anonymous ownership equivalence. The database still permits ownerless private rows, but API authorization now fails safely.
 
 **Time:** ~4 minutes. **Commit:** pending A2 commit.
+
+---
+### [2026-07-26 02:31 IST] Audit · fix A1 profile schema contract
+
+**Goal:** Bring the live Supabase profile schema and signup trigger into exact alignment with patch §23.
+
+**Plan:** Test the final migration set for the patch's required columns and trigger insert shape, then add an additive forward migration because the initial migration may already be applied.
+
+**Files touched:** `backend/tests/test_integration_audit.py` (modified: profile-contract regression), `supabase/migrations/20260726030000_align_profiles_with_auth_patch.sql` (created), `docs/audit-m2.md` (modified: A1 status), `docs/codex-log.md` (modified).
+
+**Generated:** Forward migration adding `display_name` and checked `preferred_lang`, migrating existing names, removing obsolete profile fields, and replacing `handle_new_user`.
+
+**Tests written first:** `test_profile_schema_matches_supabase_patch_contract` checks the post-migration columns, language constraint, and trigger insert target.
+
+**Run results:**
+- Run 1: FAILED — profile-contract test could not find `display_name text`.
+  → Cause: initial schema used the pre-patch `full_name`/`avatar_url` shape.
+  → Fix: added an ordered forward migration rather than rewriting history.
+- Run 2: PASSED — 1 passed, 0 failed.
+
+**Self-review:** The data update occurs before dropping `full_name`; fresh and existing databases converge on the patch contract. A real `supabase db push` remains an external/local-stack verification obligation in the deferred register.
+
+**Time:** ~5 minutes. **Commit:** pending A1 commit.
