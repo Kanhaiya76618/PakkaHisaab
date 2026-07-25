@@ -585,3 +585,37 @@ as the deterministic exception and retain the other three as personal source fac
 avoiding invention of three extra exception kinds.
 
 **Time:** ~4 minutes. **Commit:** pending plan commit.
+
+---
+### [2026-07-26 02:18 IST] Milestone 3 · complete failing engine suite
+
+**Goal:** Commit the required deterministic-engine test contract before creating any
+`engine/` implementation.
+
+**Plan:** Specify a small typed `Entry`/match/reconciliation public API in tests,
+then assert every priority rule, boundaries, no-money-float/model guards, and exact
+generated-demo end-to-end results.
+
+**Files touched:** `backend/tests/test_money.py` (created),
+`backend/tests/test_matchers.py` (created),
+`backend/tests/test_reconciler_e2e.py` (created), `docs/codex-log.md` (modified).
+
+**Generated:** Tests for exact-ref, exact amount/date, ±3-day window, fuzzy party,
+voice confirmation, refund compatibility, split-payment safety, duplicate 1/2-day
+boundaries, hard rules, and four seeded exceptions/totals.
+
+**Tests written first:** All three files in this entry; no `backend/engine/` module
+exists yet.
+
+**Run results:**
+- Run 1: FAILED — test collection raised `ModuleNotFoundError: No module named
+  'engine'` for matcher and e2e imports.
+  → Cause: intentional test-first absence of the engine package.
+  → Fix: commit this failing suite unchanged, then add deterministic engine modules
+  in small rule/reconciler commits.
+
+**Self-review:** The e2e total is deliberately hardcoded from the generated source
+data, but it needs a post-implementation calculation review before being treated as
+ground truth. No test was weakened to permit a model call or float amount.
+
+**Time:** ~4 minutes. **Commit:** pending failing-tests commit.
