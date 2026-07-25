@@ -10,6 +10,7 @@
 | 2026-07-26 | 2.5 | Audit and sample data | Complete | 5 | 7a9e3d8 |
 | 2026-07-26 | Audit | Pre-M3 integration audit plan | Complete | 0 | pending plan commit |
 | 2026-07-26 | 3 | Deterministic engine plan | Complete | 0 | pending plan commit |
+| 2026-07-26 | Audit | Read-only contract trace | Findings recorded | 1 | pending audit baseline commit |
 
 ## Historical context
 
@@ -651,3 +652,29 @@ data, but it needs a post-implementation calculation review before being treated
 ground truth. No test was weakened to permit a model call or float amount.
 
 **Time:** ~4 minutes. **Commit:** pending failing-tests commit.
+
+---
+### [2026-07-26 02:22 IST] Audit · read-only cross-file contract trace
+
+**Goal:** Establish the actual Milestone 1–2.5 integration state before changing any implementation.
+
+**Plan:** Trace producer and consumer pairs across routes, frontend calls, WebSocket events, router fixtures, migrations, authorization, environment reads, imports, and tests. Record findings first in `docs/audit-m2.md`; do not repair code in this work unit.
+
+**Files touched:** `docs/audit-m2.md` (created: nine evidence-backed audit findings and deferred register), `docs/codex-log.md` (modified: audit table and execution record).
+
+**Generated:** Findings A1–A9: profile schema drift; nullable-owner authorization bypass; missing upload/persistence and storage helpers; fixture-less/static demo; outbound-call resilience drift; and three bounded smells.
+
+**Tests written first:** None: this was the explicitly read-only audit phase. Existing test and build commands were run as evidence.
+
+**Run results:**
+- Run 1: FAILED — `MOCK_MODE=true backend/.venv/bin/pytest backend/tests -q` from `frontend/` — shell could not find the relative virtualenv path.
+  → Cause: command used the frontend working directory.
+  → Fix: reran pytest from `backend/` with `.venv/bin/pytest tests -q`.
+- Run 2: FAILED — `MOCK_MODE=true .venv/bin/pytest tests -q` — collection failed: `ModuleNotFoundError: engine.matchers` and `engine.reconciler`.
+  → Cause: committed M3 test-first suite intentionally precedes its paused engine implementation.
+  → Fix: no code change in read-only audit; recorded as A9 so the tests remain intact.
+- Run 3: PASSED — `npm run typecheck` and `npm run build` in `frontend/`.
+
+**Self-review:** Re-read every cited endpoint, migration, and component around the findings. The profile discrepancy is a forward-migration concern, and the upload/storage/demo chain is an implementation gap rather than a test failure to mask. M3 work remains stashed and unmodified.
+
+**Time:** ~18 minutes. **Commit:** pending audit baseline commit.
