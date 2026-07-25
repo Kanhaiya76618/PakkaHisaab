@@ -6,6 +6,7 @@
 | 2026-07-26 | 1 | Day 1 implementation and verification | Complete | 4 | edf9d23 |
 | 2026-07-26 | 2 | Intake pipeline plan | Complete | 0 | 1281749 |
 | 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | 8c2fae3 |
+| 2026-07-26 | 2.5 | Integration audit and sample-data plan | Complete | 0 | pending plan commit |
 
 ## Historical context
 
@@ -363,3 +364,37 @@ production build pass.
 `frontend/.env` from the Supabase dashboard; a real project needs its migration
 applied and service-role credentials configured before remote telemetry/extraction
 persistence can be verified. The local runner is Python 3.14 while CI targets 3.11.
+
+---
+### [2026-07-26 01:49 IST] Milestone 2.5 · integration audit and sample-data plan
+
+**Goal:** Make every existing Milestone 1–2 seam executable and replace absent demo
+artifacts with reproducible, ground-truthed samples before starting reconciliation.
+
+**Plan:** Test contracts at their boundaries, use the patched Supabase/Postgres model
+as the database source of truth, and generate artifacts from a single deterministic
+data definition. Do not pretend a local SQLite/SQLAlchemy check validates a Supabase
+migration: if a local Postgres/Supabase runtime is unavailable, record the blocker
+after attempting the intended check.
+
+**Files touched:** `PLAN.md` (modified: detailed Milestone 2.5 steps and file list),
+`docs/codex-log.md` (modified: planning table and entry).
+
+**Generated:** Audit strategy for imports, schemas, environment variables, design
+tokens, migration application, app entrypoints, generated image/CSV data, and fixture
+provenance.
+
+**Tests written first:** Scheduled `backend/tests/test_integration_audit.py` before
+any seam fix; it will contain column/fixture/event/environment/design regression
+checks. Sample-data tests will be added before the generator implementation.
+
+**Run results:**
+- Run 1: PASSED — reread the current `AGENTS.md`, `SPEC.md`,
+  `SPEC_PATCH_SUPABASE.md`, and `DESIGN.md`; the patch's Postgres/Supabase contract
+  overrides the original SQLite/SQLAlchemy wording.
+
+**Self-review:** The user explicitly requires a fresh database migration check but
+the patched repository contains SQL migrations, not SQLAlchemy models. The plan keeps
+that conflict visible and will neither invent models nor silently weaken the check.
+
+**Time:** ~8 minutes. **Commit:** pending plan commit.

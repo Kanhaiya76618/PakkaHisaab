@@ -99,6 +99,57 @@ Storage signed URLs, voice, and exception work.
 - `backend/pyproject.toml` only if a declared OpenAI package is necessary for the
   non-mock router path; no frontend implementation is planned for this scope.
 
+## Milestone 2.5 — integration audit and reproducible demo artifacts
+
+**Outcome:** cross-file contracts are executable rather than assumed; the repository
+contains reproducible, ground-truthed demo images/CSV/notice text and its vision
+fixtures are either live-recorded and verified or explicitly ground-truth-aligned
+PLACEHOLDERs. This milestone stops before reconciliation-engine implementation.
+
+1. Write audit tests first for Python importability/entrypoints; migration-column vs
+   extraction-draft fields; router fixture vs intake parsing; WebSocket event vs
+   terminal event schema; environment variables read vs `.env.example`; visual token
+   restrictions; and Devanagari fallback chains. Add a test for every newly exposed
+   seam rather than relying on a manual inspection.
+2. Run the backend and frontend entrypoints, inspect the TypeScript module graph via
+   `tsc`/Next build, and use a small import-graph check to report circular or orphaned
+   backend modules. Reconcile only actual product modules; test/support modules are
+   documented as intentional leaves.
+3. Apply the Supabase migration to a fresh local Supabase/Postgres instance if the
+   required CLI/container runtime is available, then exercise inserts into every
+   application table with a schema-aware SQL smoke test. If the environment cannot
+   provide the required Postgres/auth/storage schemas, log the concrete blocker rather
+   than claiming a SQLite or partial substitute validates the patched schema.
+4. Reconcile every found contract mismatch, including API/frontend schema drift and
+   missing env documentation. Preserve the patch's Postgres/Supabase contract rather
+   than reintroducing the superseded SQLite/SQLAlchemy design.
+5. Add `sample_data/generate.py` using Pillow plus a bundled open-licensed Kalam
+   font. It deterministically writes two Hindi/English khaata images, three invoices,
+   the exact 60-row PhonePe CSV, and the GST notice. Generate
+   `sample_data/GROUND_TRUTH.md` from the same constants and validate its sums,
+   duplicate pair, unpaid Gupta invoice, and four personal transactions in tests.
+6. Inspect for a usable `OPENAI_API_KEY` without printing it. If present, record each
+   vision fixture once against generated images and compare extraction output to ground
+   truth; otherwise generate exact-schema PLACEHOLDER fixtures from the same source
+   data and state that fact in fixture metadata.
+7. Run the full backend suite, frontend typecheck/build, generator idempotence checks,
+   static hard-rule sweeps, and a self-review. Maintain `docs/codex-log.md`, commit
+   scoped fixes with tests, then stop before Milestone 3.
+
+**Milestone 2.5 planned files**
+
+- `PLAN.md`, `docs/codex-log.md`
+- `backend/tests/test_integration_audit.py` and any narrow regression test required
+  by a fixed seam; no engine implementation files
+- `scripts/` audit helper only if a check cannot be expressed safely in pytest
+- `sample_data/generate.py`, `sample_data/GROUND_TRUTH.md`,
+  `sample_data/fonts/Kalam-Regular.ttf`, generated `*.jpg`, `july_upi.csv`, and
+  `gst_notice_sample.txt`
+- `sample_data/fixtures/*.json`, `sample_data/fixtures/README.md` when updated from
+  the generated ground truth
+- only the backend/frontend/config files directly implicated by a verified seam
+  mismatch.
+
 ## Milestone 3 — reconciliation engine and deterministic tests (Day 3)
 
 Implement normalization, matching rules, anomaly detection, ledger/match writes, and
