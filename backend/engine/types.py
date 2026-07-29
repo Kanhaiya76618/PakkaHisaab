@@ -30,6 +30,10 @@ class ExceptionRecord:
     kind: str
     related_entry_ids: tuple[str, ...]
     amount_paise: int = 0
+    summary_en: str = ""
+    summary_hi: str = ""
+    suggested_action: str = "ask_user"
+    party_name: str | None = None
 
 
 @dataclass(frozen=True)

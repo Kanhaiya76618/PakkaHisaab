@@ -20,7 +20,9 @@ historical entry has been rewritten.
 | 2026-07-26 | Codex | 4+5 | Live reconcile/ledger/exceptions/evidence API | Partial | 2 | 8e50bb9, e70e262 |
 | 2026-07-26 | Codex | Deploy | Railway + Vercel config (no live URL) | Partial | 1 | dde280a |
 | 2026-07-26 | Codex | Scope | On-demand demo reset, fixture eval runner | Complete | 0 | 98c6b3b, c99111f |
-| 2026-07-29 | Claude Code | Handover | Verified-by-execution status audit | Complete | 0 | (this entry) |
+| 2026-07-29 | Claude Code | Handover | Verified-by-execution status audit | Complete | 0 | cdcba99 |
+| 2026-07-29 | Claude Code | Plan | Remediation + Sarvam plan | Complete | 0 | bffdde4 |
+| 2026-07-29 | Claude Code | R1 | Derive unmatched-invoice exception, add amounts + bilingual copy | Complete | 1 | (this commit) |
 
 ## Historical context
 
@@ -1192,3 +1194,53 @@ not connected to any page, so the product a judge would click through is a mock.
 Correcting that ranks above every new feature.
 
 **Time:** ~35 minutes. **Commit:** pending handover audit commit.
+
+---
+### [2026-07-29 20:10 IST] R1 · derive the unmatched-invoice exception
+
+**Goal:** Stop the demo's headline exception from being a hardcoded constant, and give
+every exception the amount and bilingual copy SPEC §5 requires.
+
+**Plan:** Detect `unmatched_invoice` inside the pure `reconcile()` from the entries the
+matcher actually failed to consume, keyed on a real `source_kind` field rather than an id
+string prefix. Route every exception through one `build_exception()` constructor so none
+can be created without an amount and copy. Generate the Hindi/English summaries in a pure
+`engine/exception_text.py` — rejected the alternative of calling the model here, because
+`engine/` must stay model-free and the demo must survive total API failure with real copy.
+A model may later enrich these strings; it may never supply the number in them.
+
+**Files touched:** `backend/engine/exception_text.py` (created), `backend/engine/types.py`
+(modified: `summary_en`, `summary_hi`, `suggested_action`, `party_name` on
+`ExceptionRecord`), `backend/engine/reconciler.py` (modified: derivation + `source_kind`
+on every seeded entry), `backend/tests/test_reconciler_e2e.py` (modified: 3 new tests),
+`sample_data/fixtures/golden_m3.json` (regenerated).
+
+**Generated:** `build_exception()`, `summarize()`, integer-only `format_paise()` with
+Indian digit grouping, and `source_kind` provenance on khaata/invoice/UPI entries.
+
+**Tests written first:**
+`test_unmatched_invoice_exception_is_derived_from_matching_not_scripted` — a *paid*
+invoice must yield zero exceptions and an unpaid one exactly one (this is the test the old
+hardcoded line could never have passed);
+`test_every_exception_carries_its_amount_and_a_bilingual_summary`;
+`test_seeded_unmatched_invoice_is_the_gupta_four_thousand_eight_hundred`.
+
+**Run results:**
+- Run 1: FAILED — 3 new tests red, as intended. `amount_paise` was 0 on the unmatched
+  invoice and the `ExceptionRecord` had no summary fields.
+- Run 2: FAILED — `test_generated_demo_pipeline_has_exact_seeded_exceptions_and_totals`
+  — golden fixture mismatch.
+  → Cause: entries now carry `source_kind` and `description`, and exceptions carry copy,
+  so the serialized projection legitimately changed shape.
+  → Fix: regenerated `golden_m3.json` with the committed `scripts/generate_golden.py`
+  rather than relaxing the assertion. The test still compares byte-stable output.
+- Run 3: PASSED — `MOCK_MODE=true pytest tests` → **53 passed** (was 50).
+
+**Self-review:** The derived result is identical to the old scripted one — one
+`unmatched_invoice` for `invoice-INV-231` at ₹4,800 — which is the point: the demo beat is
+unchanged but is now earned by the matcher. Remaining smell, deliberately deferred: the
+three invoices are still hardcoded in `reconcile_sample_data` instead of being parsed from
+`sample_data/`, because the invoice images have only PLACEHOLDER vision fixtures. That is
+recorded honestly rather than hidden. `engine/` still has no `float(` and no model import.
+
+**Time:** ~22 minutes. **Commit:** pending R1 commit.
