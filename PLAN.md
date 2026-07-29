@@ -438,3 +438,50 @@ are available in this environment. Every Sarvam and Whisper fixture committed he
 schema-exact recorded-shape fixture derived from the documented response contract, and
 each is labelled PLACEHOLDER in its metadata. No entry will claim a live provider call
 that did not happen.
+
+---
+
+## Azure OpenAI provider (Claude Code, 2026-07-30)
+
+The user supplied Azure OpenAI credentials in place of `OPENAI_API_KEY`. Verified live
+before planning: the key authenticates, deployment `gpt-5.4` (`gpt-5.4-2026-03-05`) answers
+chat, `response_format=json_object`, **and vision** on the real invoice photograph.
+
+Three blockers found by execution, each addressed below:
+
+1. `model_router._openai_request` constructs `AsyncOpenAI(api_key=OPENAI_API_KEY)`. That
+   variable no longer exists, and Azure needs a deployment-scoped URL and `api-key` header.
+2. The deployment rejects `max_tokens` and requires `max_completion_tokens`.
+3. Azure routes by **deployment name**, and only one deployment exists. `whisper-1` and
+   `tts-1` therefore have no Azure route at all.
+
+### A1 · Azure as a provider for chat-modality tasks
+
+- `RouteConfig` gains `modality` (`chat` | `transcription` | `speech`). Only `chat` tasks
+  are Azure-eligible; audio tasks keep requiring OpenAI proper, so a missing Whisper route
+  fails loudly instead of being silently sent to a text deployment.
+- Provider resolution at call time: Azure when `AZURE_OPENAI_API_KEY` + endpoint are set,
+  otherwise direct OpenAI. `model_calls.provider` records which one actually served —
+  `azure_openai` is a third value, so the CHECK constraint needs a forward migration.
+- `build_azure_request()` is a pure function returning (url, headers, body) so the URL
+  shape, `api-version`, and `max_completion_tokens` substitution are unit-testable with no
+  network.
+- Env: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME`,
+  `AZURE_OPENAI_API_VERSION`, all documented in `.env.example`.
+
+### A2 · Fix the invoice prompt's party ambiguity
+
+The live vision call returned `party_name: "Kanhaiya Mehta"` — the invoice's *Bill To*
+line — where our ledger needs the **supplier** issuing the bill. `INVOICE_SYSTEM_PROMPT`
+must name the seller explicitly. This is a real extraction bug that only a live call could
+have surfaced; the placeholder fixture hid it.
+
+### A3 · Record the invoice vision fixture for real
+
+With a working vision model and a real photographed invoice, `vision_invoice.json` stops
+being a PLACEHOLDER. Record once, then diff every field against `GROUND_TRUTH.md`. If the
+recording disagrees with the paper, the recording is kept and the disagreement is reported
+as an accuracy finding — the fixture must show what the model actually said.
+
+Tests stay keyless: all live work is behind `MOCK_MODE=false` and the suite continues to
+run with no credentials.
