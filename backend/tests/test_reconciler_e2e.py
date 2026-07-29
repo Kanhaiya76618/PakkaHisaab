@@ -70,3 +70,31 @@ def test_seeded_unmatched_invoice_is_the_gupta_four_thousand_eight_hundred() -> 
     assert unmatched[0].related_entry_ids == ("invoice-INV-231",)
     assert unmatched[0].amount_paise == 480000
     assert "4,800" in unmatched[0].summary_en
+
+
+def test_only_personal_credits_into_the_business_account_raise_an_exception() -> None:
+    """SPEC §10/§11: the flagged case is a personal *credit* sitting in the business
+    account. Personal spending is still labelled, but it is not the notice risk."""
+    from engine.reconciler import reconcile
+
+    result = reconcile([
+        _entry("upi-in", "upi_csv", "payment_in", "Rahul Bhai", 1500000, "2026-07-03", "UPI-PERS-15000"),
+        _entry("upi-out", "upi_csv", "payment_out", "Family pharmacy", 250000, "2026-07-07", "UPI-PERS-2500"),
+    ])
+    from dataclasses import replace
+
+    labelled = reconcile([
+        replace(_entry("upi-in", "upi_csv", "payment_in", "Rahul Bhai", 1500000, "2026-07-03", "UPI-PERS-15000"), personal=True),
+        replace(_entry("upi-out", "upi_csv", "payment_out", "Family pharmacy", 250000, "2026-07-07", "UPI-PERS-2500"), personal=True),
+    ])
+    assert [item.kind for item in result.exceptions] == []
+    personal = [item for item in labelled.exceptions if item.kind == "personal_vs_business"]
+    assert len(personal) == 1
+    assert personal[0].related_entry_ids == ("upi-in",)
+
+
+def test_all_four_seeded_personal_rows_are_labelled_personal() -> None:
+    result = reconcile_sample_data(ROOT / "sample_data")
+    personal_entries = [item for item in result.ledger_entries if item.personal]
+    assert len(personal_entries) == 4
+    assert sum(item.amount_paise for item in personal_entries) == 2_050_000

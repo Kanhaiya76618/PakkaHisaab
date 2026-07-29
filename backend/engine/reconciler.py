@@ -7,7 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from engine.matchers import match_entries
-from engine.accounting import store_total_paise
+from engine.accounting import INFLOWS as INFLOW_TYPES, store_total_paise
 from engine.exception_text import summarize
 from engine.types import Entry, EntryMatch, ExceptionRecord, ReconciliationResult
 
@@ -58,7 +58,9 @@ def reconcile(entries: list[Entry]) -> ReconciliationResult:
     for left, right in detect_duplicate_pairs(ordered):
         exceptions.append(build_exception("possible_duplicate", (left, right), by_id[left].amount_paise, by_id[left].party_name))
     for entry in ordered:
-        if entry.personal:
+        # A personal *credit* in the business account is the notice risk (SPEC §11).
+        # Personal spending is still labelled for the risk ratio, but is not an exception.
+        if entry.personal and entry.entry_type in INFLOW_TYPES:
             exceptions.append(build_exception("personal_vs_business", (entry.id,), entry.amount_paise, entry.party_name))
     ledger_entries = tuple(ordered)
     return ReconciliationResult(ledger_entries, tuple(matches), tuple(exceptions), unmatched, store_total_paise(ledger_entries))
@@ -79,7 +81,7 @@ def reconcile_sample_data(root: Path) -> ReconciliationResult:
     with (root / "july_upi.csv").open() as file:
         for row in csv.DictReader(file):
             amount = int(Decimal(row["Amount"]) * 100)
-            personal = row["UPI Ref"] == "UPI-PERS-15000"
+            personal = row["UPI Ref"].startswith("UPI-PERS")
             entries.append(Entry(f"upi-{row['UPI Ref']}", "july-upi", "payment_out" if amount < 0 else "payment_in", row["Transaction Details"], abs(amount), row["Txn Date"], row["UPI Ref"], source_kind="upi_csv", description=row["Transaction Details"], personal=personal))
     result = reconcile(entries)
     exceptions = [*result.exceptions, build_exception("arithmetic_error", ("khaata-page-1",), abs(written_total - row_total))]

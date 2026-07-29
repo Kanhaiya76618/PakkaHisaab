@@ -234,7 +234,7 @@
       "entry_type": "payment_out",
       "id": "upi-UPI-PERS-2500",
       "party_name": "Family pharmacy (personal)",
-      "personal": false,
+      "personal": true,
       "source_id": "july-upi",
       "source_kind": "upi_csv",
       "upi_ref": "UPI-PERS-2500"
@@ -666,7 +666,7 @@
       "entry_type": "payment_out",
       "id": "upi-UPI-PERS-1800",
       "party_name": "Home electricity (personal)",
-      "personal": false,
+      "personal": true,
       "source_id": "july-upi",
       "source_kind": "upi_csv",
       "upi_ref": "UPI-PERS-1800"
@@ -822,7 +822,7 @@
       "entry_type": "payment_out",
       "id": "upi-UPI-PERS-1200",
       "party_name": "Personal mobile recharge",
-      "personal": false,
+      "personal": true,
       "source_id": "july-upi",
       "source_kind": "upi_csv",
       "upi_ref": "UPI-PERS-1200"

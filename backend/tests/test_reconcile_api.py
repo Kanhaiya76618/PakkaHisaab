@@ -28,3 +28,24 @@ def test_evidence_is_assembled_from_live_reconciliation_state() -> None:
     assert response.status_code == 200
     assert response.json()["ledger_entry_id"] == ledger_entry_id
     assert "sources" in response.json()
+
+
+def test_risk_endpoint_returns_the_seeded_amber_score_after_reconcile() -> None:
+    client.post(f"/api/stores/{DEMO_STORE_ID}/reconcile")
+    response = client.get(f"/api/stores/{DEMO_STORE_ID}/risk")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["risk_score"] == 68
+    assert payload["band"] == "watch"
+    assert len(payload["gap_by_month"]) == 4
+    assert payload["warnings"]
+    assert payload["components"]["gap_points"] + payload["components"]["exception_points"] + payload["components"]["personal_points"] == 68
+
+
+def test_risk_reflects_exceptions_the_user_has_already_resolved() -> None:
+    client.post("/api/demo/reset")
+    before = client.get(f"/api/stores/{DEMO_STORE_ID}/risk").json()["risk_score"]
+    exception_id = client.get(f"/api/stores/{DEMO_STORE_ID}/exceptions").json()["exceptions"][0]["id"]
+    client.post(f"/api/exceptions/{exception_id}/resolve", json={"action": "create_entry"})
+    after = client.get(f"/api/stores/{DEMO_STORE_ID}/risk").json()["risk_score"]
+    assert after < before, "resolving an exception must lower the notice risk"

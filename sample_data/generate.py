@@ -222,16 +222,18 @@ Six rows include a visible **GST** column. Their GST values are ₹160, ₹93, �
 
 ## GST notice truth
 
-The notice claims July UPI receipts of **₹2,41,000** versus declared turnover of
-**₹1,98,000**.
+The notice claims July UPI receipts of **₹1,05,264** — exactly the credit total in
+`july_upi.csv` — versus the declared turnover of **₹71,000** held in
+`fixtures/risk_history.json`. The **₹34,264** difference is what the risk radar shows
+and what the notice asks about, so the seeded notice, CSV, and Kavach score all agree.
 """
 
 
 def _write_notice(destination: Path) -> None:
     destination.write_text(
         "GST NOTICE — July 2026\n\n"
-        "Our records indicate UPI receipts of ₹2,41,000 for July 2026 while your declared turnover is ₹1,98,000. "
-        "Please explain the ₹43,000 difference and submit supporting books, invoices, and payment evidence.\n",
+        "Our records indicate UPI receipts of ₹1,05,264 for July 2026 while your declared turnover is ₹71,000. "
+        "Please explain the ₹34,264 difference and submit supporting books, invoices, and payment evidence.\n",
         encoding="utf-8",
     )
 

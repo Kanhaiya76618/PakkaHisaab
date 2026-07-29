@@ -1,0 +1,14 @@
+{
+  "_note": "Seeded history for the demo store's risk radar. July receipts are NOT listed here — they are computed from july_upi.csv through the reconciler. These are the months that predate the uploaded sources, plus the declared turnover the owner filed. All values are integer paise.",
+  "prior_month_receipts_paise": {
+    "2026-04": 7840000,
+    "2026-05": 8690000,
+    "2026-06": 7230000
+  },
+  "declared_paise": {
+    "2026-04": 7400000,
+    "2026-05": 8200000,
+    "2026-06": 7000000,
+    "2026-07": 7100000
+  }
+}

@@ -16,6 +16,7 @@ from config import DEMO_STORE_ID, get_settings
 from events import agent_log_hub
 from agents.intake_agent import InMemoryExtractionRepository, IntakeAgent, SourceDocument, websocket_emitter
 from engine.reconciler import reconcile_sample_data
+from engine.risk import assess_sample_data
 from events import AgentLogEvent
 from evals.runner import run as run_evals
 
@@ -112,6 +113,27 @@ async def ledger(store_id: str) -> dict[str, object]:
         raise HTTPException(409, "Run reconciliation first")
     result = state["result"]
     return {"entries": [asdict(item) for item in result.ledger_entries], "total_paise": result.ledger_total_paise}
+
+
+@app.get("/api/stores/{store_id}/risk")
+async def risk(store_id: str) -> dict[str, object]:
+    """Deterministic notice-risk radar. Every number here comes from `engine/risk.py`."""
+    await ensure_authorized_store(store_id, None)
+    state = reconciliation_state.get(store_id)
+    if not state:
+        raise HTTPException(409, "Run reconciliation first")
+    open_count = sum(1 for item in state["exceptions"] if item["status"] == "open")
+    report = assess_sample_data(ROOT / "sample_data", state["result"], open_count)
+    return {
+        "risk_score": report.risk_score,
+        "band": report.band,
+        "gap_by_month": [asdict(item) for item in report.gap_by_month],
+        "warnings": [asdict(item) for item in report.warnings],
+        "components": asdict(report.components),
+        "personal_pct": report.personal_pct,
+        "open_exception_count": report.open_exception_count,
+        "formula": "gap 60% + open exceptions 25% + personal/business ambiguity 15%",
+    }
 
 
 @app.get("/api/stores/{store_id}/exceptions")
