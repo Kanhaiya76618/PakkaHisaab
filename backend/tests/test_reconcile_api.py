@@ -122,3 +122,15 @@ def test_demo_store_is_preloaded_so_the_first_screen_is_never_empty() -> None:
         assert ledger.json()["entries"]
         assert len(fresh.get(f"/api/stores/{DEMO_STORE_ID}/exceptions").json()["exceptions"]) == 4
         assert fresh.get(f"/api/stores/{DEMO_STORE_ID}/risk").status_code == 200
+
+
+def test_root_path_serves_a_service_index_not_a_bare_404() -> None:
+    """The bare domain is the first thing anyone pastes into a browser. A raw
+    `{"detail":"Not Found"}` there reads as a broken deployment even when every route works."""
+    response = client.get("/")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["service"] == "pakkahisaab-api"
+    assert payload["status"] == "ok"
+    assert "/api/health" in payload["endpoints"].values()
+    assert payload["docs"] == "/docs"

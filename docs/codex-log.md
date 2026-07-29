@@ -32,7 +32,8 @@ historical entry has been rewritten.
 | 2026-07-30 | Claude Code | Azure | Azure OpenAI provider + first live vision recording | Complete | 4 | 1916567 |
 | 2026-07-30 | Claude Code | Sarvam | Live Sarvam STT/TTS — and a false claim corrected | Complete | 3 | c57aa94 |
 | 2026-07-30 | Claude Code | Deploy | Fix Railway build failure + a boot-crash trap in DEPLOY.md | Complete | 1 | dba1af6 |
-| 2026-07-30 | Claude Code | Deploy | Inline pip deps — `-r` include broke the build layer | Complete | 1 | (this commit) |
+| 2026-07-30 | Claude Code | Deploy | Inline pip deps — `-r` include broke the build layer | Complete | 1 | 80cc7ab |
+| 2026-07-30 | Claude Code | Deploy | **API live on Railway** + root service index | Complete | 0 | (this commit) |
 
 ## Historical context
 
@@ -2075,3 +2076,43 @@ environment variables and a green deploy remain the user's step, and the viabili
 open until a URL answers.
 
 **Time:** ~10 minutes. **Commit:** pending inline-requirements commit.
+
+---
+### [2026-07-30 06:20 IST] Deploy · the API is live
+
+**The viability gate is met on the backend.** https://pakkahisaab-production.up.railway.app answers publicly. Verified by curl against
+the deployed URL, not locally:
+
+| Check | Result |
+|---|---|
+| `GET /api/health` | 200 `{"status":"ok","mock_mode":true}` |
+| `POST /api/stores/demo` | 200, public demo store, no auth |
+| `GET /ledger` | 71 entries, `1285100` paise net |
+| `GET /risk` | 68 · watch |
+| `GET /exceptions` | 4 exceptions |
+| `GET /export?fmt=pdf` | 200, `%PDF` |
+| `GET /api/evals/run` | 18 cases |
+
+**The reported problem was not a failure.** The user opened the bare domain and saw
+`{"detail":"Not Found"}`. Every route lives under `/api`, so FastAPI 404s at `/` — the
+deployment was already fully working. But that is a bad first impression on the one URL a judge
+is most likely to paste into a browser, so `GET /` now returns a service index: name, status,
+`mock_mode`, a link to `/docs`, and the demo store's ledger/risk/export/eval/WebSocket paths.
+
+**Files touched:** `backend/main.py` (root route), `backend/tests/test_reconcile_api.py`
+(contract test), `README.md` and `DEPLOY.md` (live URL recorded, with the remaining Vercel
+wiring spelled out).
+
+**Run results:** PASSED — **127 passed**.
+
+**Recorded honestly:** production runs with `MOCK_MODE=true`, so the router serves committed
+fixtures rather than calling Azure OpenAI or Sarvam. That is worth stating plainly rather than
+letting the live URL imply live models. The core demo path is model-free either way — the
+reconciler, risk scoring, evidence assembly and exports never touch a provider — so only
+vision and voice intake differ. Flipping to `false` is one variable, and both providers are
+verified working from this machine.
+
+Still open: the **frontend is not deployed**, so the judge-facing UI is still localhost-only.
+That is now the single remaining item on the definition of done.
+
+**Time:** ~10 minutes. **Commit:** pending live-URL commit.

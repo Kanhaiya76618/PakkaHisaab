@@ -54,4 +54,18 @@
 4. Confirm browser Network requests use the Railway domain (not localhost), then
    resolve one exception and reload to check the displayed response.
 
-No live URL is committed here: Railway/Vercel domain allocation requires your account.
+## Live URLs
+
+| Service | URL | Status |
+|---|---|---|
+| API (Railway) | https://pakkahisaab-production.up.railway.app | **live**, verified 2026-07-30 |
+| Frontend (Vercel) | — | not yet deployed |
+
+Remaining wiring: set `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL` (use `wss://`) on Vercel
+to the API URL, then set `FRONTEND_ORIGIN` on Railway to the exact Vercel production URL — no
+trailing slash — and redeploy Railway so CORS admits that origin.
+
+`MOCK_MODE` is currently `true` in production, so the router serves committed fixtures instead
+of calling Azure OpenAI and Sarvam. The core demo path (reconcile → exceptions → evidence →
+risk → exports) is model-free and behaves identically either way; only vision and voice intake
+change. Set `MOCK_MODE=false` to exercise the live providers.

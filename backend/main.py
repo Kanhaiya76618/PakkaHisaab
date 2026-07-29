@@ -66,6 +66,36 @@ async def _stage(store_id: str, agent: str, message_en: str, message_hi: str) ->
     await agent_log_hub.publish(store_id, AgentLogEvent(agent=agent, level="info", message_en=message_en, message_hi=message_hi, detail="live"))
 
 
+@app.get("/")
+async def service_index() -> dict[str, object]:
+    """Service index for the bare domain.
+
+    Every route lives under /api, so the root previously returned FastAPI's
+    `{"detail":"Not Found"}` — which reads as a failed deploy to anyone who pastes the
+    domain into a browser, including a judge.
+    """
+    settings = get_settings()
+    store = settings.demo_store_id
+    return {
+        "service": "pakkahisaab-api",
+        "status": "ok",
+        "tagline": "Five ways in, one truth out.",
+        "mock_mode": settings.mock_mode,
+        "docs": "/docs",
+        "endpoints": {
+            "health": "/api/health",
+            "open_demo_store": "POST /api/stores/demo",
+            "ledger": f"/api/stores/{store}/ledger",
+            "exceptions": f"/api/stores/{store}/exceptions",
+            "risk": f"/api/stores/{store}/risk",
+            "export_csv": f"/api/stores/{store}/export?fmt=csv",
+            "export_pdf": f"/api/stores/{store}/export?fmt=pdf",
+            "evals": "/api/evals/run",
+            "agent_log_websocket": f"/ws/stores/{store}/agent-log",
+        },
+    }
+
+
 @app.get("/api/health")
 async def health() -> dict[str, object]:
     settings = get_settings()

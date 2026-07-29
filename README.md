@@ -10,6 +10,16 @@ evidence, and protects the owner with GST notice-risk analysis.
 Built for the ChatGPT Codex India Hackathon 2026 (BlockseBlock), theme #6 — AI for Bharat
 Businesses.
 
+## Live
+
+**API:** <https://pakkahisaab-production.up.railway.app> — verified 2026-07-30: health, the zero-login demo store, a
+71-entry ledger totalling ₹12,851.00, risk 68 (Watch), all four seeded exceptions, the PDF
+Evidence Pack, and 18 eval cases all answer over the public URL.
+
+**Frontend:** not yet deployed. Point Vercel's `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL`
+at the API above (`wss://` for the socket), then set Railway's `FRONTEND_ORIGIN` to the exact
+Vercel URL so CORS allows it.
+
 ---
 
 ## The core trust principle
