@@ -1,0 +1,10 @@
+{
+  "_provenance": "PLACEHOLDER — recorded-shape fixture. No SARVAM_API_KEY or usable OPENAI_API_KEY exists in this environment, so this was NOT captured from a live call. The keys and types match the provider's documented response contract (docs.sarvam.ai, read 2026-07-29); the transcript is the seeded voice note from SPEC 11. Replace by recording once against real audio with a real key, then diff against GROUND_TRUTH.md. `audios[0]` is 64 zero bytes, not speech.",
+  "_provider": "sarvam",
+  "_model": "bulbul:v3",
+  "_target_language_code": "hi-IN",
+  "request_id": "placeholder-bulbul-0001",
+  "audios": [
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  ]
+}

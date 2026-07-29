@@ -1,0 +1,10 @@
+{
+  "_provenance": "PLACEHOLDER — recorded-shape fixture. No SARVAM_API_KEY or usable OPENAI_API_KEY exists in this environment, so this was NOT captured from a live call. The keys and types match the provider's documented response contract (docs.sarvam.ai, read 2026-07-29); the transcript is the seeded voice note from SPEC 11. Replace by recording once against real audio with a real key, then diff against GROUND_TRUTH.md.",
+  "_provider": "sarvam",
+  "_model": "saaras:v3",
+  "_mode": "transcribe",
+  "request_id": "placeholder-saaras-0001",
+  "transcript": "रमेश को 2500 रुपये कैश दिए, याद रखना।",
+  "language_code": "hi-IN",
+  "language_probability": 0.98
+}

@@ -1,0 +1,10 @@
+{
+  "_provenance": "PLACEHOLDER — recorded-shape fixture. No SARVAM_API_KEY or usable OPENAI_API_KEY exists in this environment, so this was NOT captured from a live call. The keys and types match the provider's documented response contract (docs.sarvam.ai, read 2026-07-29); the transcript is the seeded voice note from SPEC 11. Replace by recording once against real audio with a real key, then diff against GROUND_TRUTH.md.",
+  "_provider": "openai",
+  "_model": "gpt-4o-mini",
+  "entry_type": "payment_out",
+  "party_name": "Ramesh",
+  "amount_rupees": 2500,
+  "description": "रमेश को 2500 रुपये कैश दिए, याद रखना।",
+  "confidence": 0.92
+}

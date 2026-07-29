@@ -25,7 +25,8 @@ historical entry has been rewritten.
 | 2026-07-29 | Claude Code | R1 | Derive unmatched-invoice exception, add amounts + bilingual copy | Complete | 1 | 6c1e40e |
 | 2026-07-29 | Claude Code | R2 | Deterministic risk radar + /risk endpoint | Complete | 2 | 528e86c |
 | 2026-07-29 | Claude Code | R3+R4 | Evidence Passport payload + CSV/PDF exports | Complete | 0 | 5c600e1 |
-| 2026-07-29 | Claude Code | R5 | Connect Hisaab/Kavach/Evals to the live API | Complete | 3 | (this commit) |
+| 2026-07-29 | Claude Code | R5 | Connect Hisaab/Kavach/Evals to the live API | Complete | 3 | 6c22c52 |
+| 2026-07-30 | Claude Code | S1-S6 | Sarvam Indic ASR/TTS with logged Whisper fallback | Complete | 3 | (this commit) |
 
 ## Historical context
 
@@ -1434,3 +1435,114 @@ so its 100% scores are true by construction rather than measured; that is the ne
 would fix. Both are in the closing status table.
 
 **Time:** ~55 minutes. **Commit:** pending R5 commit.
+
+---
+### [2026-07-30 00:40 IST] Sarvam AI Indic speech · router extension
+
+**Goal:** Add Sarvam AI as the Indic speech provider — `saaras:v3` transcription and
+`bulbul:v3` synthesis — with an explicit, logged fallback to the existing Whisper/OpenAI
+TTS path. Scoped deliberately as a router extension, not a rework.
+
+**Plan:** Read the request contract from docs.sarvam.ai *before* writing code rather than
+guessing at field names. Add `provider` to `RouteConfig` so the routing table itself states
+which vendor owns a task, then layer one new function — `route_with_fallback` — over the
+existing `route`, so the retry, timeout, and telemetry behaviour is inherited rather than
+duplicated. Rejected the alternative of putting fallback logic inside `route`: callers that
+have no fallback (vision, classification) should not pay for a branch they never take, and
+a caller needs to *know* which provider answered, which a transparent fallback would hide.
+
+**Verified against the vendor docs first** (docs.sarvam.ai, 2026-07-30):
+- STT: `POST https://api.sarvam.ai/speech-to-text`, header `api-subscription-key`,
+  multipart fields `file` / `model` / `mode` / `language_code`; response
+  `request_id`, `transcript`, `language_code`, `language_probability`. `mode=transcribe`
+  is the default and is the mode that performs number normalization.
+- TTS: `POST https://api.sarvam.ai/text-to-speech`, same header, JSON body `text` /
+  `target_language_code` / `model` / `speaker`; response `audios[0]` as base64.
+
+**Files touched:** `backend/model_router.py` (Sarvam tasks, `FALLBACK_CHAIN`,
+`route_with_fallback`, `Provenance`, `sarvam_stt_cost_inr`, provider/currency on
+`ModelCall`), `backend/agents/intake_agent.py` (voice-note path, `transcript_text`,
+`amount_paise_from_transcript`, `VOICE_SYSTEM_PROMPT`), `backend/main.py` (audio bytes
+through the upload route), `backend/evals/runner.py` (computed ASR comparison),
+`backend/config.py`, `.env.example`, `DEPLOY.md`,
+`supabase/migrations/20260730010000_add_model_call_provider_columns.sql` (created),
+`frontend/app/store/[id]/evals/page.tsx` (already had the panel from R5),
+`sample_data/fixtures/{transcribe_indic,transcribe_hi,classify_txn,tts_indic,tts_hi}.json`
+(created), `README.md` (**created** — the repository had none),
+`backend/tests/test_sarvam_router.py` + `test_voice_intake.py` (created),
+`backend/tests/test_evals.py` + `test_intake_agent.py` (modified).
+
+**Generated:** two routing-table entries with provider tags; `route_with_fallback`
+returning `(result, Provenance)`; `_sarvam_transcribe` / `_sarvam_tts` against the verified
+contract; INR cost at the published ₹30/hour; a voice intake path that transcribes
+Indic-first then classifies; a digits-only amount extractor; the computed
+Sarvam-vs-Whisper eval case; the `model_calls` provider migration; and the README router
+table.
+
+**Tests written first:** 7 in `test_sarvam_router.py` — routing table, MOCK_MODE fixtures,
+**the fallback recording both legs in `model_calls` with the right provider on each**,
+primary-success never touching the fallback, both-providers-dead raising `RouterError`, the
+₹30/hour arithmetic, and INR/USD separation. 5 in `test_voice_intake.py` — both provider
+response shapes, the digits-only extractor, the end-to-end voice entry at 250,000 paise,
+the provider named on the agent log, and the multipart route handing through raw bytes.
+2 in `test_evals.py` for the comparison.
+
+**Run results:**
+- Run 1: FAILED — `ImportError: cannot import name 'route_with_fallback'`. Intended.
+- Run 2: FAILED — `RouterError: Mock fixture is missing for task 'transcribe_indic'`.
+  → Fix: wrote the five provider fixtures, each with a `_provenance` field stating it is a
+  PLACEHOLDER matching the documented schema, not a live recording.
+- Run 3: FAILED — `test_all_runtime_environment_reads_are_documented`.
+  → Cause: the environment-contract test Codex wrote caught my undocumented
+  `SARVAM_API_KEY`. This is the test doing exactly its job.
+  → Fix: documented it in `.env.example`, added it to `Settings`, and noted in `DEPLOY.md`
+  that it is optional because the fallback covers its absence.
+- Run 4: FAILED — `test_unsupported_intake_kind_is_not_misrouted_to_invoice`.
+  → Cause: that test used `voice_note` as its example of an *unsupported* kind. Adding the
+  voice path made its premise obsolete, not its intent.
+  → Fix: re-pointed it at `gst_notice` (genuinely unhandled) and left a comment saying why
+  the example changed. The assertion — unknown kinds fail loudly, never fall through to the
+  invoice route — is unchanged and still meaningful. This is a premise repair, not a
+  weakening.
+- Run 5: PASSED — **83 passed**, all keyless under `MOCK_MODE=true`. Frontend typecheck and
+  production build clean.
+- Run 6: PASSED — live against both servers: `/api/evals/run` returns 17 cases;
+  Sarvam extracts `amount_paise: 250000` from `रमेश को 2500 रुपये कैश दिए` at ₹0.05 for 6s
+  of audio, Whisper returns `None` from `रमेश को पच्चीस सौ रुपये कैश दिए`. The eval page
+  renders "Indic ASR: Sarvam vs Whisper" with both transcripts and a 50% category score.
+
+**Decisions recorded:**
+1. **The amount comes from the transcript, not the model.** `classify_txn` may name the
+   party and the entry type, but `amount_paise_from_transcript` takes the figure from the
+   transcript's digits and only falls back to the model's `amount_rupees` if the transcript
+   has none. This keeps "only code touches the math" true on the voice path too, and it is
+   what makes the Sarvam-vs-Whisper comparison meaningful rather than decorative: the
+   extractor returns `None` for a spelled-out number instead of guessing.
+2. **Costs are stored in two currencies, never converted.** Sarvam bills ₹30/hour, OpenAI
+   bills USD/token. `model_calls` now carries `cost_inr`, `cost_usd`, and `currency`, and
+   the eval page prints "₹0.05 + $0.000" rather than one blended figure. A single number
+   would require an FX rate I do not have — a fabricated value in a financial product.
+3. **The eval comparison is computed, not asserted.** The two transcripts are committed
+   fixtures, but the pass/fail on top of them runs the real extractor at request time. The
+   rest of the eval suite still compares committed constants to themselves, which is why
+   those categories read 100%; the ASR category reads an honest 50%.
+
+**Self-review:** Re-read the router diff for three things. (a) `engine/` is untouched by
+this change and still imports nothing but stdlib and its siblings — Sarvam lives only in
+`model_router.py`, so the single-touchpoint rule holds with two providers instead of one.
+(b) Both Sarvam calls have an explicit 30-second `httpx` timeout and inherit the router's
+one retry, and `_sarvam_key()` raises `RouterError` rather than sending an empty header, so
+a missing key degrades to Whisper instead of failing the request. (c) MOCK_MODE fixtures for
+the pre-existing tasks are byte-identical — the vision fixtures were not touched.
+
+**Not done, stated plainly:** no live Sarvam or Whisper call has been made from this
+environment — there is no `SARVAM_API_KEY` and `backend/.env` holds a 15-character
+placeholder where an `OPENAI_API_KEY` would be. Both transcripts are PLACEHOLDER fixtures
+labelled as such in their own `_provenance` field and on the eval page itself. SPEC §11's
+`voice_ramesh.m4a` still does not exist in `sample_data/`, so the voice path is exercised
+with synthetic bytes in tests rather than real audio. `tts_indic` is routable, fixture-
+backed, and tested, but no UI plays a Hindi answer yet because `POST /query` is still
+unbuilt. The `model_calls` provider migration is written but unapplied — no Supabase CLI
+is available here.
+
+**Time:** ~70 minutes. **Commit:** pending Sarvam commit.

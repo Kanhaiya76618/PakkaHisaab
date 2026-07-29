@@ -14,6 +14,8 @@
    - `DATABASE_URL`: use the Supabase **pooler** connection string from §22,
      never the IPv6-only direct `db.<ref>.supabase.co` host.
    - `OPENAI_API_KEY` (leave blank only for deliberate mock deployment)
+   - `SARVAM_API_KEY` (optional — Indic ASR/TTS; without it the router falls back to
+     Whisper and OpenAI TTS and records the fallback in `model_calls`)
    - `MOCK_MODE=false`, `DEMO_STORE_ID=00000000-0000-0000-0000-000000000001`
    - `FRONTEND_ORIGIN`: exact Vercel production URL, such as
      `https://pakkahisaab.vercel.app` — **no trailing slash**.

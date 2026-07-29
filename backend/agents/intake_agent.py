@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import inspect
+import re
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Callable, Protocol
 
 from intake.csv_parser import parse_csv_text
 from intake.types import ExtractedEntryDraft
-from model_router import ROUTING_TABLE, RouterError, route
+from model_router import ROUTING_TABLE, RouterError, route, route_with_fallback
 
 
 KHAATA_SYSTEM_PROMPT = """You are a data-extraction engine for handwritten Indian shop ledgers (khaata).
@@ -33,6 +34,46 @@ Never invent an amount or date. If a field is unreadable use null and confidence
 Output JSON only."""
 
 
+VOICE_SYSTEM_PROMPT = """You classify one spoken transaction note from an Indian shop owner.
+The transcript may mix Hindi and English. Amounts in the transcript are already written as
+digits - use exactly the digits present. Output JSON only:
+{"entry_type":"sale|purchase|payment_in|payment_out|credit_given|credit_received|note",
+"party_name":str|null,"amount_rupees":number|null,"description":str,"confidence":0.0-1.0}
+Rules: 1) NEVER invent or convert an amount. If the transcript contains no digits, set
+amount_rupees=null and confidence<=0.3. 2) party_name is the person or shop named, in Latin
+script. 3) Output JSON only."""
+
+# Digits only, deliberately. Saaras `transcribe` mode normalizes spoken numbers
+# ("pachchees sau" -> 2500); a transcript that still spells the number out must yield no
+# amount rather than a guessed one.
+_AMOUNT_PATTERN = re.compile(r"(?<![\d.])\d{1,3}(?:,\d{2,3})*(?:\.\d{1,2})?(?![\d])|(?<![\d.])\d+(?:\.\d{1,2})?(?![\d])")
+
+
+def transcript_text(result: dict[str, Any]) -> str:
+    """Read a transcript from either provider's native response shape.
+
+    Sarvam returns `transcript`; OpenAI Whisper returns `text`. Normalizing here keeps the
+    fixtures honest — each one is the shape its provider actually documents.
+    """
+    for key in ("transcript", "text"):
+        value = result.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    raise RouterError("Transcription response contained no transcript")
+
+
+def amount_paise_from_transcript(transcript: str) -> int | None:
+    """Largest digit amount in the transcript, as integer paise, or None."""
+    if not transcript:
+        return None
+    best: int | None = None
+    for token in _AMOUNT_PATTERN.findall(transcript):
+        paise = _rupees_to_paise(token)
+        if paise is not None and (best is None or paise > best):
+            best = paise
+    return best
+
+
 @dataclass(frozen=True)
 class SourceDocument:
     id: str
@@ -40,6 +81,8 @@ class SourceDocument:
     kind: str
     filename: str
     content: str | None = None
+    audio_bytes: bytes | None = None
+    audio_seconds: float = 0.0
 
 
 class ExtractionRepository(Protocol):
@@ -98,6 +141,9 @@ class IntakeAgent:
             await self._emit("success", f"Parsed {len(entries)} CSV entries", f"{len(entries)} CSV एंट्री निकाली गईं", "deterministic_parser")
             return entries
 
+        if document.kind == "voice_note":
+            return await self._process_voice_note(document)
+
         task_by_kind = {"khaata_photo": "vision_khaata", "invoice_image": "vision_invoice"}
         task = task_by_kind.get(document.kind)
         if task is None:
@@ -116,6 +162,70 @@ class IntakeAgent:
         self.repository.add_many(entries)
         await self._emit("success", f"Extracted {len(entries)} entries from {document.filename}", f"{document.filename} से {len(entries)} एंट्री निकाली गईं", task)
         return entries
+
+    async def _process_voice_note(self, document: SourceDocument) -> list[ExtractedEntryDraft]:
+        """Transcribe Indic-first, then classify. The provider that served is logged."""
+        await self._emit(
+            "info", "Transcribing with Sarvam Saaras v3",
+            "Sarvam Saaras v3 से लिप्यंतरण हो रहा है", "transcribe_indic",
+        )
+        payload: dict[str, Any] = {
+            "audio_bytes": document.audio_bytes,
+            "filename": document.filename,
+            "audio_seconds": document.audio_seconds,
+        }
+        transcription, provenance = await route_with_fallback(
+            "transcribe_indic", payload, mock_mode=self.mock_mode
+        )
+        transcript = transcript_text(transcription)
+        if provenance.fell_back_from:
+            await self._emit(
+                "warning",
+                f"Sarvam unavailable — transcribed with {provenance.model} instead",
+                f"Sarvam उपलब्ध नहीं — {provenance.model} से लिप्यंतरण किया गया",
+                f"{provenance.provider}:{provenance.model} fallback_from={provenance.fell_back_from}",
+            )
+        else:
+            await self._emit(
+                "success", f"Transcribed by {provenance.model}",
+                f"{provenance.model} ने लिप्यंतरण किया", f"{provenance.provider}:{provenance.model}",
+            )
+
+        classification = await route(
+            "classify_txn",
+            {
+                "messages": [
+                    {"role": "system", "content": VOICE_SYSTEM_PROMPT},
+                    {"role": "user", "content": transcript},
+                ]
+            },
+            mock_mode=self.mock_mode,
+        )
+        # The model may name the party and the type; the amount is taken from the
+        # transcript digits so no model can introduce a figure that was never spoken.
+        amount_paise = amount_paise_from_transcript(transcript)
+        model_amount = _rupees_to_paise(classification.get("amount_rupees"))
+        if amount_paise is None:
+            amount_paise = model_amount
+        confidence = classification.get("confidence", 0.0)
+        entry = ExtractedEntryDraft(
+            store_id=document.store_id,
+            source_document_id=document.id,
+            entry_type=str(classification.get("entry_type") or "note"),
+            party_name=classification.get("party_name") if isinstance(classification.get("party_name"), str) else None,
+            amount_paise=amount_paise,
+            entry_date=None,
+            description=transcript,
+            confidence=confidence if isinstance(confidence, float) else 0.0,
+            extraction_model=f"{provenance.model}+{ROUTING_TABLE['classify_txn'].model}",
+            bbox_or_line_ref="voice note, full transcript",
+        )
+        self.repository.add_many([entry])
+        await self._emit(
+            "success", f"Voice note became 1 entry ({transcript[:40]})",
+            f"वॉइस नोट से 1 एंट्री बनी ({transcript[:40]})", "classify_txn",
+        )
+        return [entry]
 
     def _vision_entries(self, document: SourceDocument, task: str, result: dict[str, Any]) -> list[ExtractedEntryDraft]:
         raw_entries = result.get("entries")

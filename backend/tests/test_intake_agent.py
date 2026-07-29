@@ -84,8 +84,11 @@ def test_websocket_emitter_adapts_bilingual_intake_event(monkeypatch) -> None:
 
 
 def test_unsupported_intake_kind_is_not_misrouted_to_invoice() -> None:
+    # `voice_note` was this test's original example, until it became a supported path
+    # (Sarvam Indic ASR). The intent stands: a kind we do not handle must fail loudly,
+    # never fall through to the invoice route.
     agent = IntakeAgent(repository=InMemoryExtractionRepository(), emit=lambda _: None, mock_mode=True)
-    document = SourceDocument(id="voice-1", store_id="demo-store", kind="voice_note", filename="note.m4a")
+    document = SourceDocument(id="notice-1", store_id="demo-store", kind="gst_notice", filename="notice.txt")
 
     with pytest.raises(RouterError, match="Unsupported intake document kind"):
         asyncio.run(agent.process(document))

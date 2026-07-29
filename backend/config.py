@@ -16,6 +16,7 @@ class Settings:
     supabase_jwt_secret: str = os.getenv("SUPABASE_JWT_SECRET", "")
     database_url: str = os.getenv("DATABASE_URL", "")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+    sarvam_api_key: str = os.getenv("SARVAM_API_KEY", "")
     mock_mode: bool = os.getenv("MOCK_MODE", "false").lower() == "true"
     demo_store_id: str = os.getenv("DEMO_STORE_ID", DEMO_STORE_ID)
     frontend_origin: str = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")

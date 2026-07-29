@@ -91,8 +91,17 @@ async def upload_document(
 ) -> dict[str, object]:
     await ensure_authorized_store(store_id, None)
     document_id = str(uuid4())
-    content = (await file.read()).decode("utf-8", errors="replace") if kind in {"bank_csv", "upi_csv"} else None
-    document = SourceDocument(document_id, store_id, kind, file.filename or "upload", content)
+    raw = await file.read()
+    # CSVs are text; audio must stay bytes — decoding it would corrupt the upload.
+    is_csv = kind in {"bank_csv", "upi_csv"}
+    document = SourceDocument(
+        document_id,
+        store_id,
+        kind,
+        file.filename or "upload",
+        content=raw.decode("utf-8", errors="replace") if is_csv else None,
+        audio_bytes=raw if kind == "voice_note" else None,
+    )
     entries = await IntakeAgent(
         repository=upload_repository,
         emit=websocket_emitter(store_id),
