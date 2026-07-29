@@ -1,10 +1,10 @@
 "use client";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { ChevronDown, CircleCheck, CircleX } from "lucide-react";
+import { ChevronDown, CircleCheck, CircleDashed, CircleX } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AsyncState } from "@/components/AsyncState";
-import { fetchEvals, type EvalsReport } from "@/lib/api";
+import { fetchEvals, formatPaise, type EvalsReport } from "@/lib/api";
 import type { PageState } from "@/lib/types";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -79,9 +79,9 @@ export default function EvalsPage() {
                 <div className="chart-head">
                   <div>
                     <p className="eyebrow">Provider comparison</p>
-                    <h2>Indic ASR: Sarvam vs Whisper</h2>
+                    <h2>Indic ASR: measured on real audio</h2>
                   </div>
-                  <span>Same Hindi voice note, both providers</span>
+                  <span>sample_data/voice_ramesh.wav</span>
                 </div>
                 <table className="ledger-table">
                   <thead>
@@ -89,6 +89,7 @@ export default function EvalsPage() {
                       <th>Provider</th>
                       <th>Transcript</th>
                       <th>Amount extracted</th>
+                      <th>Path</th>
                       <th>Result</th>
                     </tr>
                   </thead>
@@ -99,18 +100,35 @@ export default function EvalsPage() {
                           <strong>{item.provider ?? "—"}</strong>
                         </td>
                         <td lang="hi">{String(item.actual.transcript ?? "—")}</td>
-                        <td>{String(item.actual.amount_paise ?? "not extracted")}</td>
                         <td>
-                          <span className={`case-result result-${item.passed ? "pass" : "fail"}`}>
-                            {item.passed ? <CircleCheck aria-hidden="true" /> : <CircleX aria-hidden="true" />}{" "}
-                            {item.passed ? "Pass" : "Fail"}
-                          </span>
+                          {item.actual.amount_paise
+                            ? formatPaise(Number(item.actual.amount_paise))
+                            : "—"}
+                        </td>
+                        <td>{String(item.actual.path ?? "—")}</td>
+                        <td>
+                          {item.measured === false ? (
+                            <span className="case-result result-partial">
+                              <CircleDashed aria-hidden="true" /> Not measured
+                            </span>
+                          ) : (
+                            <span className={`case-result result-${item.passed ? "pass" : "fail"}`}>
+                              {item.passed ? <CircleCheck aria-hidden="true" /> : <CircleX aria-hidden="true" />}{" "}
+                              {item.passed ? "Pass" : "Fail"}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {asrCases[0]?.note && <p className="drawer-intro">{asrCases[0].note}</p>}
+                <ul className="asr-notes">
+                  {asrCases.map((item) => (
+                    <li key={`${item.id}-note`}>
+                      <strong>{item.id}</strong> — {item.note}
+                    </li>
+                  ))}
+                </ul>
               </section>
             )}
 
@@ -135,10 +153,16 @@ export default function EvalsPage() {
               {report.cases.map((item) => (
                 <Collapsible.Root className="case-row" key={item.id}>
                   <Collapsible.Trigger className="case-trigger">
-                    <span className={`case-result result-${item.passed ? "pass" : "fail"}`}>
-                      {item.passed ? <CircleCheck aria-hidden="true" /> : <CircleX aria-hidden="true" />}{" "}
-                      {item.passed ? "Pass" : "Fail"}
-                    </span>
+                    {item.measured === false ? (
+                      <span className="case-result result-partial">
+                        <CircleDashed aria-hidden="true" /> Not run
+                      </span>
+                    ) : (
+                      <span className={`case-result result-${item.passed ? "pass" : "fail"}`}>
+                        {item.passed ? <CircleCheck aria-hidden="true" /> : <CircleX aria-hidden="true" />}{" "}
+                        {item.passed ? "Pass" : "Fail"}
+                      </span>
+                    )}
                     <strong>{item.id}</strong>
                     <span>{CATEGORY_LABEL[item.category] ?? item.category}</span>
                     <span>{item.provider ?? "deterministic"}</span>

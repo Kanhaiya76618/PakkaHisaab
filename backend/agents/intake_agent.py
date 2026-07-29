@@ -8,9 +8,10 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Callable, Protocol
 
+from engine.indic_numbers import amount_paise_from_words
 from intake.csv_parser import parse_csv_text
 from intake.types import ExtractedEntryDraft
-from model_router import ROUTING_TABLE, RouterError, route, route_with_fallback
+from model_router import ROUTING_TABLE, RouterError, effective_config, route, route_with_fallback
 
 
 KHAATA_SYSTEM_PROMPT = """You are a data-extraction engine for handwritten Indian shop ledgers (khaata).
@@ -70,7 +71,14 @@ def transcript_text(result: dict[str, Any]) -> str:
 
 
 def amount_paise_from_transcript(transcript: str) -> int | None:
-    """Largest digit amount in the transcript, as integer paise, or None."""
+    """Rupee amount in the transcript as integer paise, or None.
+
+    Digits first, because Saaras usually normalizes spoken amounts (measured: the seeded
+    voice note came back as `₹2500` on 5 of 5 live calls). Words second, because it is not
+    guaranteed — the same sentence with different prosody returned `पच्चीस सौ` intact. The
+    word parser lives in `engine/indic_numbers.py`, so either path ends in arithmetic done
+    by code rather than a number chosen by a model.
+    """
     if not transcript:
         return None
     best: int | None = None
@@ -78,7 +86,9 @@ def amount_paise_from_transcript(transcript: str) -> int | None:
         paise = _rupees_to_paise(token)
         if paise is not None and (best is None or paise > best):
             best = paise
-    return best
+    if best is not None:
+        return best
+    return amount_paise_from_words(transcript)
 
 
 @dataclass(frozen=True)
@@ -224,7 +234,9 @@ class IntakeAgent:
             entry_date=None,
             description=transcript,
             confidence=confidence if isinstance(confidence, float) else 0.0,
-            extraction_model=f"{provenance.model}+{ROUTING_TABLE['classify_txn'].model}",
+            # The model that *actually* served, not the one the table declares — Azure
+            # substitutes its deployment, and the Evidence Passport shows this as a badge.
+            extraction_model=f"{provenance.model}+{effective_config('classify_txn', ROUTING_TABLE['classify_txn']).model}",
             bbox_or_line_ref="voice note, full transcript",
         )
         self.repository.add_many([entry])

@@ -27,14 +27,18 @@ def test_transcript_text_reads_both_provider_shapes() -> None:
         transcript_text({"nothing": 1})
 
 
-def test_amount_extraction_needs_digits_and_never_guesses() -> None:
-    """The reason `transcribe_indic` is primary: Saaras normalizes spoken numbers to
-    digits. A transcript that spells the number out yields *no* amount, never a wrong
-    one — the engine would rather have a gap than an invented figure."""
+def test_amount_extraction_reads_digits_first_then_falls_back_to_words() -> None:
+    """Digits are primary because Saaras usually normalizes them (5/5 live calls on the
+    seeded note). Words are the net, because it is not guaranteed — the same sentence with
+    different prosody kept `पच्चीस सौ` intact. Either way the number comes from code."""
     assert amount_paise_from_transcript("रमेश को 2500 रुपये कैश दिए") == 250_000
     assert amount_paise_from_transcript("₹4,800 का बिल") == 480_000
     assert amount_paise_from_transcript("2,500.50 रुपये") == 250_050
-    assert amount_paise_from_transcript("रमेश को पच्चीस सौ रुपये कैश दिए") is None
+    # The word-number path: this is the transcript Saaras actually returned once.
+    assert amount_paise_from_transcript("रमेश को पच्चीस सौ रुपये कैश दिए") == 250_000
+    assert amount_paise_from_transcript("चार हज़ार आठ सौ रुपये") == 480_000
+    # Still refuses to invent one when there is no number at all.
+    assert amount_paise_from_transcript("रमेश को कैश दिए") is None
     assert amount_paise_from_transcript("") is None
 
 

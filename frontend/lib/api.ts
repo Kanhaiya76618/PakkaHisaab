@@ -122,10 +122,12 @@ export const EvalsSchema = z.object({
       cost_inr: z.number().optional(),
       provider: z.string().optional(),
       note: z.string().optional(),
+      measured: z.boolean().optional(),
     }),
   ),
   summary: z.record(z.number()),
   count: z.number().int(),
+  measured_count: z.number().int().optional(),
 });
 
 export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;

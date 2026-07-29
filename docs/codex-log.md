@@ -29,7 +29,8 @@ historical entry has been rewritten.
 | 2026-07-30 | Claude Code | S1-S6 | Sarvam Indic ASR/TTS with logged Whisper fallback | Complete | 3 | 92021f4 |
 | 2026-07-30 | Claude Code | STOP | Final verified status and gap ranking | Complete | 0 | bd7dcf6 |
 | 2026-07-30 | Claude Code | Data | Real photographed invoice replaces generated INV-231 | Complete | 2 | 0603ad5 |
-| 2026-07-30 | Claude Code | Azure | Azure OpenAI provider + first live vision recording | Complete | 4 | (this commit) |
+| 2026-07-30 | Claude Code | Azure | Azure OpenAI provider + first live vision recording | Complete | 4 | 1916567 |
+| 2026-07-30 | Claude Code | Sarvam | Live Sarvam STT/TTS — and a false claim corrected | Complete | 3 | (this commit) |
 
 ## Historical context
 
@@ -1857,3 +1858,109 @@ still a placeholder against a *generated* image; photographing a real khaata pag
 recording it is now a one-command job.
 
 **Time:** ~50 minutes. **Commit:** pending Azure provider commit.
+
+---
+### [2026-07-30 05:10 IST] Sarvam live · and correcting a claim I had got wrong
+
+**Goal:** The user supplied a real `SARVAM_API_KEY`. Verify it, wire the speech path to live
+providers, and replace the placeholder speech fixtures with recordings.
+
+**Both endpoints work.** Bulbul v3 TTS returned 200 with real audio. Saaras v3 STT returned
+200 in all three modes. So I used TTS to solve a gap I had flagged as open: **SPEC §11's
+missing voice note now exists** as `sample_data/voice_ramesh.wav` — Bulbul-synthesized Hindi
+saying the seeded phrase. It is synthetic speech, not a human recording, and is labelled that
+way everywhere.
+
+## The important part: I had published a false claim, and the key disproved it
+
+The README, PLAN, and eval case all asserted that Saaras `transcribe` mode normalizes spoken
+numbers to digits, and the whole Sarvam-vs-Whisper comparison rested on it. I took that from
+the vendor's docs and from a placeholder fixture **I had written myself with the answer I
+wanted**. The first live call returned:
+
+    रमेश को पच्चीस सौ रुपये कैश दिए।     ← words, not digits
+
+I then measured it properly instead of guessing:
+
+| Spoken | Heard | Digits? |
+|---|---|---|
+| नौ आठ चार शून्य नौ पांच… (the docs' own phone-number example) | नौ आठ चार शून्य नौ पाँच… | **No** |
+| पच्चीस सौ (colloquial "25 hundred") | पच्चीस सौ | **No** |
+| चार हज़ार आठ सौ | ₹4800 | **Yes** |
+| 2500 (spoken as digits) | दो हज़ार पाँच सौ | No — *reversed* |
+
+Then on the committed `voice_ramesh.wav`, five consecutive calls all returned
+`रमेश को ₹2500 कैश दिए, याद रखना।` — digits, 5/5.
+
+**Conclusion, stated precisely:** Saaras does normalize spoken amounts, and did so
+consistently on the seeded asset, but it is **pronunciation-dependent, not guaranteed** — the
+same sentence with different Bulbul prosody kept the words. My published claim was
+over-stated as a general property.
+
+**So I fixed the design, not the wording.** A cashbook must not depend on a provider's
+formatting mood. `engine/indic_numbers.py` (new) parses Hindi/Hinglish number words in
+deterministic, model-free, integer-only code: `पच्चीस सौ` → 2500, `चार हज़ार आठ सौ` → 4800,
+`ढाई हज़ार` → 2500 (kept as 5/2 so half-forms never become floats), plus Latin
+transliterations. `amount_paise_from_transcript` now reads digits first and falls back to the
+word parser. Either path ends in arithmetic done by code.
+
+**Files touched:** `backend/engine/indic_numbers.py` + `backend/tests/test_indic_numbers.py`
+(created), `backend/agents/intake_agent.py` (word fallback; effective model in provenance),
+`backend/evals/runner.py` (rebuilt ASR cases; `measured` flag), `backend/tests/test_evals.py`,
+`backend/tests/test_voice_intake.py`, `frontend/lib/api.ts`,
+`frontend/app/store/[id]/evals/page.tsx`, `frontend/app/globals.css`,
+`sample_data/voice_ramesh.wav` (created — real audio),
+`sample_data/fixtures/transcribe_indic.json` + `tts_indic.json` (**re-recorded live**),
+`sample_data/generate.py` + `GROUND_TRUTH.md`, `README.md`, `backend/.env` (not committed).
+
+**Run results:**
+- Run 1: FAILED — `test_text_without_a_number_yields_none_rather_than_a_guess` with
+  `assert 9 is None` for the input `"no numbers here"`.
+  → Cause: **a genuinely dangerous mapping I had written** — `"no"` → नौ → 9. In a cashbook
+  that invents an amount out of the English word "no".
+  → Fix: dropped every Latin transliteration that collides with an ordinary English word:
+  `no`(9), `do`(2), `sat`(7), `tin`(3), `bis`(20), `lac`(100000). `tin` is the sharpest of
+  these — our own invoice reads *"2 Tin"* of sunflower oil, so keeping it would have turned a
+  unit of measure into the number 3.
+- Run 2: FAILED — `test_indic_asr_comparison...` expected the Whisper leg to fail extraction.
+  → Cause: that assertion encoded the false claim. The word parser now recovers the amount,
+  so its premise was gone.
+  → Fix: rebuilt the eval cases around what is actually measurable (below).
+- Run 3: PASSED — **120 passed** (was 99). Frontend typecheck and production build clean.
+
+**The eval comparison is now measured, and says what it cannot measure.** Three cases:
+`ASR-SARVAM` (live transcript → digits path → ₹2,500, ₹0.05 for 6 s), `ASR-WORDS-FALLBACK`
+(the real un-normalized transcript → word parser → ₹2,500), and `ASR-WHISPER` marked
+**NOT MEASURED** — no `OPENAI_API_KEY`, no Azure `whisper` deployment. Unmeasured cases are
+excluded from the category score rather than scored as failures, because an unrun test is not
+a failure and is certainly not a pass. The eval page renders it as "Not measured" in amber.
+The panel is renamed from "Sarvam vs Whisper" to "Indic ASR: measured on real audio", because
+the head-to-head has not happened.
+
+**Live end-to-end, verified:** real audio → Saaras (`sarvam`, 629 ms, ₹0.05, live) → classify
+(`azure_openai/gpt-5.4`, 2,238 ms, live) → one ledger entry of **250000 paise** to `Ramesh`,
+`payment_out`, provenance `saaras:v3+gpt-5.4`. The agent terminal names the serving provider
+on every line.
+
+**Also fixed:** the intake agent recorded `gpt-4o-mini` in `extraction_model` while Azure had
+actually served `gpt-5.4`, because it read the routing table's declared model rather than the
+effective one. The Evidence Passport shows that string as a model badge, so it was displaying
+a model that never ran.
+
+**Self-review.** The thing worth saying plainly: the placeholder fixture actively caused this
+bug. I wrote it with the output I expected, the tests passed against my own expectation, and
+the false claim then propagated into the README and the eval page. Three of the four bugs
+found in this session and the last one were invisible until a real provider answered. That is
+an argument for recording fixtures early rather than treating them as a formality.
+
+`engine/` gains a module and keeps its rules — `indic_numbers.py` imports only `re`, has no
+`float(`, and the grep tests cover it. Sarvam and Azure both still live only in
+`model_router.py`.
+
+**Still not done:** `transcribe_hi`, `tts_hi`, and `classify_txn` fixtures remain placeholders
+because Whisper and OpenAI TTS have no route from this machine. `vision_khaata.json` is still
+a placeholder against a *generated* image — photographing a real handwritten khaata page and
+running `scripts/record_vision_fixture.py` is the last placeholder worth eliminating. And
+deployment is still the open gate.
+
+**Time:** ~55 minutes. **Commit:** pending Sarvam-live commit.

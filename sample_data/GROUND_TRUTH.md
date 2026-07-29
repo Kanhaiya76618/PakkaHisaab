@@ -48,6 +48,20 @@ Do not edit generated values by hand; change the constants in `generate.py` and 
 Six rows include a visible **GST** column. Their GST values are ₹160, ₹93, ₹230,
 ₹63, ₹49, and ₹36; this page is the explicit `gst_amount` schema-drift trigger.
 
+## Hindi voice note
+
+`voice_ramesh.wav` is committed real audio for SPEC §11's voice note, saying
+**"रमेश को पच्चीस सौ रुपये कैश दिए, याद रखना।"** — ₹2,500 paid to Ramesh in cash.
+
+It is **synthesized** by Sarvam Bulbul v3 (`hi-IN`, speaker `shubh`), not a human recording;
+it exists so the voice path can be exercised against real audio rather than dummy bytes.
+The generator does not create or overwrite it.
+
+Measured against it: Sarvam Saaras v3 transcribes it as `रमेश को ₹2500 कैश दिए, याद रखना।`,
+identical on 5 of 5 live calls — the amount normalized to digits. That is not guaranteed in
+general (a differently-synthesized rendering kept "पच्चीस सौ" in words), which is why
+`engine/indic_numbers.py` parses spoken number words as a deterministic fallback.
+
 ## GST notice truth
 
 The notice claims July UPI receipts of **₹1,05,264** — exactly the credit total in

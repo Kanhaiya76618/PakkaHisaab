@@ -1,10 +1,10 @@
 {
-  "_provenance": "PLACEHOLDER — recorded-shape fixture. No SARVAM_API_KEY or usable OPENAI_API_KEY exists in this environment, so this was NOT captured from a live call. The keys and types match the provider's documented response contract (docs.sarvam.ai, read 2026-07-29); the transcript is the seeded voice note from SPEC 11. Replace by recording once against real audio with a real key, then diff against GROUND_TRUTH.md.",
+  "_provenance": "LIVE RECORDING — captured 2026-07-30 from POST https://api.sarvam.ai/speech-to-text, model saaras:v3, mode=transcribe, language_code=hi-IN, against sample_data/voice_ramesh.wav. Verbatim response, unedited. Reproduced identically on 5 consecutive calls.",
   "_provider": "sarvam",
   "_model": "saaras:v3",
   "_mode": "transcribe",
-  "request_id": "placeholder-saaras-0001",
-  "transcript": "रमेश को 2500 रुपये कैश दिए, याद रखना।",
-  "language_code": "hi-IN",
-  "language_probability": 0.98
+  "_measured_note": "Saaras normalized the spoken amount to digits here (5/5 calls). It is NOT a guarantee: the same sentence synthesized with different prosody returned 'पच्चीस सौ' in words, which is why engine/indic_numbers.py exists as a deterministic fallback.",
+  "request_id": "20260729_d4832e5b-8704-48d9-a8ac-09c085c24a5f",
+  "transcript": "रमेश को ₹2500 कैश दिए, याद रखना।",
+  "language_code": "hi-IN"
 }

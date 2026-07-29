@@ -383,3 +383,7 @@ html[lang="hi"] .eyebrow { letter-spacing: .03em; }
 .exception-personal { border-left-color: var(--brand-strong); }
 .risk-gauge .gauge-score { fill: var(--ink); font-family: var(--font-display); font-size: 26px; font-variant-numeric: tabular-nums; }
 .risk-gauge .gauge-caption { fill: var(--ink-muted); font-size: 9px; }
+.result-partial { color: var(--warning); }
+.asr-notes { margin: .75rem 1rem 1rem; padding-left: 1.1rem; color: var(--ink-muted); font-size: .8rem; }
+.asr-notes li { margin-bottom: .4rem; line-height: 1.6; }
+.asr-notes strong { color: var(--ink); font-family: var(--font-mono); font-size: .75rem; }
