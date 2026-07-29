@@ -56,7 +56,7 @@ def test_invoice_mock_intake_uses_invoice_route() -> None:
         id="demo-invoice-image",
         store_id="00000000-0000-0000-0000-000000000001",
         kind="invoice_image",
-        filename="gupta_inv_231.jpg",
+        filename="mehta_inv_231.jpg",
     )
 
     entries = asyncio.run(agent.process(document))

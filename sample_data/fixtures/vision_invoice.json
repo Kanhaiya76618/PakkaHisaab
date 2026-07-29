@@ -1,11 +1,14 @@
 {
+  "_provenance": "PLACEHOLDER extraction, but ground-truthed against a REAL document: sample_data/mehta_inv_231.jpg is a photograph of a printed invoice, and every field below was read off that photograph by hand. No live vision call was made (no usable OPENAI_API_KEY in this environment). Because the source is now a real photo rather than a rendered image, re-recording this fixture against gpt-4o is a genuine accuracy measurement — run it and diff against GROUND_TRUTH.md.",
+  "_source_document": "mehta_inv_231.jpg",
+  "_source_kind": "photograph of a real printed invoice",
   "entries": [
     {
       "entry_type": "purchase",
-      "party_name": "Gupta Traders",
+      "party_name": "Mehta Kirana Shop",
       "amount_rupees": 4800,
       "entry_date": "2026-07-12",
-      "description": "Invoice INV-231",
+      "description": "Invoice INV-231 · atta 10 bag, sunflower oil 2 tin, sugar 3 bag",
       "row_ref": "page 1, grand total",
       "confidence": 1.0
     }

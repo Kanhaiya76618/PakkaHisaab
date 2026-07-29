@@ -104,13 +104,16 @@ def test_placeholder_fixtures_match_generated_ground_truth() -> None:
         "row_ref": "page 1, written total",
         "confidence": 1.0,
     }
+    # INV-231's source is now a photograph of a real printed invoice, so the fixture's
+    # description names the line items visible on it (atta ₹2,600 + oil ₹1,900 +
+    # sugar ₹300 = ₹4,800) instead of just the invoice number.
     assert invoice == [
         {
             "entry_type": "purchase",
-            "party_name": "Gupta Traders",
+            "party_name": "Mehta Kirana Shop",
             "amount_rupees": 4800,
             "entry_date": "2026-07-12",
-            "description": "Invoice INV-231",
+            "description": "Invoice INV-231 · atta 10 bag, sunflower oil 2 tin, sugar 3 bag",
             "row_ref": "page 1, grand total",
             "confidence": 1.0,
         }

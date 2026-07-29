@@ -76,7 +76,7 @@ def reconcile_sample_data(root: Path) -> ReconciliationResult:
         if raw["description"] == "written_total": written_total = amount; continue
         row_total += amount
         entries.append(Entry(f"khaata-{index}", "khaata-page-1", raw["entry_type"], raw["party_name"], amount, raw["entry_date"], source_kind="khaata_photo", description=raw["description"]))
-    invoices = [("invoice-INV-231", "Gupta Traders", 480000, "2026-07-12"), ("invoice-INV-232", "Kumar Suppliers", 720000, "2026-07-10"), ("invoice-INV-233", "Kumar Suppliers", 720000, "2026-07-11")]
+    invoices = [("invoice-INV-231", "Mehta Kirana Shop", 480000, "2026-07-12"), ("invoice-INV-232", "Kumar Suppliers", 720000, "2026-07-10"), ("invoice-INV-233", "Kumar Suppliers", 720000, "2026-07-11")]
     entries += [Entry(identifier, identifier, "purchase", party, amount, day, source_kind=INVOICE_KIND) for identifier, party, amount, day in invoices]
     with (root / "july_upi.csv").open() as file:
         for row in csv.DictReader(file):

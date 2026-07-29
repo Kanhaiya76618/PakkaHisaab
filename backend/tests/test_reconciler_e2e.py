@@ -63,7 +63,9 @@ def test_every_exception_carries_its_amount_and_a_bilingual_summary() -> None:
         assert exception.suggested_action in {"create_entry", "merge_duplicates", "mark_personal", "adjust_amount", "ask_user"}
 
 
-def test_seeded_unmatched_invoice_is_the_gupta_four_thousand_eight_hundred() -> None:
+def test_seeded_unmatched_invoice_is_the_four_thousand_eight_hundred_bill() -> None:
+    """INV-231, ₹4,800, dated 2026-07-12 — the invoice whose source document is the
+    photograph at sample_data/mehta_inv_231.jpg."""
     result = reconcile_sample_data(ROOT / "sample_data")
     unmatched = [item for item in result.exceptions if item.kind == "unmatched_invoice"]
     assert len(unmatched) == 1

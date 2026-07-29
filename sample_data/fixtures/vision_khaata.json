@@ -1,7 +1,7 @@
 {
   "entries": [
     {"entry_type": "credit_given", "party_name": "रमेश / Ramesh", "amount_rupees": 2500, "entry_date": "2026-07-12", "description": "उधार दिया / credit", "row_ref": "page 1, row 1", "confidence": 1.0},
-    {"entry_type": "purchase", "party_name": "Gupta Traders", "amount_rupees": 4800, "entry_date": "2026-07-12", "description": "supplier invoice", "row_ref": "page 1, row 2", "confidence": 1.0},
+    {"entry_type": "purchase", "party_name": "Mehta Kirana Shop", "amount_rupees": 4800, "entry_date": "2026-07-12", "description": "supplier invoice", "row_ref": "page 1, row 2", "confidence": 1.0},
     {"entry_type": "purchase", "party_name": "Milk Booth", "amount_rupees": 1200, "entry_date": "2026-07-12", "description": "दूध", "row_ref": "page 1, row 3", "confidence": 1.0},
     {"entry_type": "purchase", "party_name": "Asha Stores", "amount_rupees": 1730, "entry_date": "2026-07-12", "description": "masala stock", "row_ref": "page 1, row 4", "confidence": 1.0},
     {"entry_type": "sale", "party_name": "Cash Sale", "amount_rupees": 3500, "entry_date": "2026-07-12", "description": "बिक्री", "row_ref": "page 1, row 5", "confidence": 1.0},

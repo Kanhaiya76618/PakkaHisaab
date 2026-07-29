@@ -3,13 +3,13 @@
     {
       "amount_paise": 480000,
       "kind": "unmatched_invoice",
-      "party_name": "Gupta Traders",
+      "party_name": "Mehta Kirana Shop",
       "related_entry_ids": [
         "invoice-INV-231"
       ],
       "suggested_action": "create_entry",
-      "summary_en": "₹4,800.00 invoice from Gupta Traders has no matching payment in any source.",
-      "summary_hi": "Gupta Traders का ₹4,800.00 का बिल किसी भी स्रोत में भुगतान से नहीं मिला।"
+      "summary_en": "₹4,800.00 invoice from Mehta Kirana Shop has no matching payment in any source.",
+      "summary_hi": "Mehta Kirana Shop का ₹4,800.00 का बिल किसी भी स्रोत में भुगतान से नहीं मिला।"
     },
     {
       "amount_paise": 720000,
@@ -389,7 +389,7 @@
       "entry_date": "2026-07-12",
       "entry_type": "purchase",
       "id": "invoice-INV-231",
-      "party_name": "Gupta Traders",
+      "party_name": "Mehta Kirana Shop",
       "personal": false,
       "source_id": "invoice-INV-231",
       "source_kind": "invoice",
@@ -413,7 +413,7 @@
       "entry_date": "2026-07-12",
       "entry_type": "purchase",
       "id": "khaata-2",
-      "party_name": "Gupta Traders",
+      "party_name": "Mehta Kirana Shop",
       "personal": false,
       "source_id": "khaata-page-1",
       "source_kind": "khaata_photo",

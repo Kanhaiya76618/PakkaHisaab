@@ -27,7 +27,8 @@ historical entry has been rewritten.
 | 2026-07-29 | Claude Code | R3+R4 | Evidence Passport payload + CSV/PDF exports | Complete | 0 | 5c600e1 |
 | 2026-07-29 | Claude Code | R5 | Connect Hisaab/Kavach/Evals to the live API | Complete | 3 | 6c22c52 |
 | 2026-07-30 | Claude Code | S1-S6 | Sarvam Indic ASR/TTS with logged Whisper fallback | Complete | 3 | 92021f4 |
-| 2026-07-30 | Claude Code | STOP | Final verified status and gap ranking | Complete | 0 | (this commit) |
+| 2026-07-30 | Claude Code | STOP | Final verified status and gap ranking | Complete | 0 | bd7dcf6 |
+| 2026-07-30 | Claude Code | Data | Real photographed invoice replaces generated INV-231 | Complete | 2 | (this commit) |
 
 ## Historical context
 
@@ -1643,3 +1644,99 @@ and I did not claim any live model call, because none was possible here. Every f
 so in its own `_provenance` field, on the eval page, and in the README.
 
 **Time:** ~25 minutes. **Commit:** pending final status commit.
+
+---
+### [2026-07-30 03:45 IST] Sample data · real photographed invoice for INV-231
+
+**Goal:** Replace the synthetic `gupta_inv_231.jpg` with a photograph of a real printed
+invoice supplied by the user, so the demo's headline exception is backed by an actual
+document rather than a PIL rendering.
+
+**The document:** MEHTA KIRANA SHOP, New Cotton Market Hubballi, Invoice No. 231, dated
+12/07/2026, billed to Kanhaiya Mehta. Three lines — atta 10 bag @260 = ₹2,600, sunflower oil
+2 tin @950 = ₹1,900, sugar 3 bag @100 = ₹300 — totalling **₹4,800**. I checked the
+arithmetic: the lines sum to exactly the printed total, so this invoice is internally
+consistent and the deliberate ₹200 arithmetic error still lives only on khaata page 1, where
+the spec puts it.
+
+**Plan:** The photo names a different supplier than the seed data did, so the party has to
+travel with the image — otherwise the Evidence Passport prints "Gupta Traders" beside a photo
+headed MEHTA KIRANA SHOP. That is exactly the filename/party incoherence I fixed for the
+Kumar invoices earlier in this handover, and it would land in the signature feature. So:
+rename to `mehta_inv_231.jpg`, move the party to "Mehta Kirana Shop" everywhere the seed
+data flows, and make the generator treat the photograph as **input**, not output.
+
+**Files touched:** `sample_data/mehta_inv_231.jpg` (created — photograph, converted PNG →
+JPEG q88, 271 KB), `sample_data/gupta_inv_231.jpg` (deleted),
+`sample_data/generate.py` (modified: split `INVOICES` into `PHOTOGRAPHED_INVOICE` and
+`RENDERED_INVOICES`; only the latter is drawn; khaata row 2 party),
+`sample_data/GROUND_TRUTH.md` (regenerated), `backend/engine/reconciler.py`,
+`backend/evidence.py`, `sample_data/fixtures/vision_invoice.json`,
+`sample_data/fixtures/vision_khaata.json`, `sample_data/fixtures/README.md` (rewritten),
+`sample_data/fixtures/golden_m3.json` (regenerated), `backend/evals/cases/cases.json`,
+`backend/tests/test_sample_data.py`, `test_integration_audit.py`, `test_intake_agent.py`,
+`test_reconciler_e2e.py`, `README.md`.
+
+**Tests written first:**
+- `test_photographed_invoice_is_real_and_the_generator_never_overwrites_it` — the important
+  one. It hashes the photo, runs the real generator, and re-hashes. Without it, a routine
+  `python sample_data/generate.py` would silently paint a synthetic invoice over real
+  evidence and the Evidence Passport would cite a document that no longer existed.
+- `test_seeded_unmatched_invoice_names_the_supplier_printed_on_the_photograph` — the ledger
+  party, the exception's `party_name`, and both bilingual summaries must all say
+  "Mehta Kirana Shop".
+- `test_ground_truth_records_the_photograph_as_the_invoice_source`.
+- Updated the artifact-set test to assert the generator does **not** emit the photo.
+
+**Run results:**
+- Run 1: FAILED — all 3 new tests red (no photo, party still Gupta). Intended.
+- Run 2: FAILED — `test_placeholder_fixtures_match_generated_ground_truth`.
+  → Cause: I enriched the invoice fixture's `description` to name the line items now visible
+  on the real photo, and that test pins the fixture's exact shape.
+  → Fix: updated the expected description to match the document, with an inline comment
+  saying why. The assertion still pins every field exactly — it is a premise update to
+  follow a new real source, not a loosened check.
+- Run 3: PASSED — **86 passed** (was 83). Frontend typecheck and production build clean.
+- Run 4: PASSED — live: `GET /ledger-entries/invoice-INV-231/evidence` returns
+  `filename: mehta_inv_231.jpg`, party "Mehta Kirana Shop", ₹4,800.00, and
+  `"No matching record was found in any other source yet."` in both languages. The exception
+  reads "₹4,800.00 invoice from Mehta Kirana Shop has no matching payment in any source."
+  The CSV export's `evidence_files` column names the photograph.
+
+**Deliberate spec deviation, recorded:** SPEC §9 and §11 illustrate this invoice as
+"Gupta Traders / `gupta_inv_231.jpg`". The seed party now follows the physical document
+instead. I judged the photograph to be the higher authority — §11 explicitly offers
+"photograph real staged pages" as the intended alternative to rendered ones, and evidence
+that contradicts its own source document is worse than a cosmetic departure from an
+illustrative name. Every **structural** contract §11 sets is unchanged: one ₹4,800 invoice
+dated 2026-07-12 with no matching UPI payment, producing exactly one `unmatched_invoice`
+among exactly four seeded exceptions. `SPEC.md` itself was not edited — it is the contract,
+not my working file.
+
+**Self-review:** Two things I checked deliberately. First, that the khaata page moved with
+the invoice: `khaata_page_1.jpg` row 2 records the same ₹4,800 supplier bill, so it now reads
+"Mehta Kirana Shop" too and the image was regenerated — leaving it as Gupta Traders would
+have put two different supplier names on one transaction. Second, that the arithmetic-error
+exception is untouched at ₹200, because the photographed invoice's own lines sum correctly
+and I did not want a second, accidental arithmetic anomaly. Remaining "Gupta Traders" hits
+in `test_matchers.py`, `test_csv_parser.py`, and two synthetic entries in
+`test_reconciler_e2e.py` are arbitrary party names in self-contained fixtures with no link
+to seeded data; I renamed the one test whose *name* referenced the old seed
+(`test_seeded_unmatched_invoice_is_the_gupta_...` → `..._is_the_four_thousand_eight_hundred_bill`)
+so no test name lies about what it checks.
+
+**Still a placeholder, stated plainly:** the *extraction* for this invoice is still a
+committed fixture, not a recorded `gpt-4o` call — there is no usable API key here. But the
+source document is now real, which upgrades what a future recording would prove: running
+`vision_invoice` against `mehta_inv_231.jpg` becomes a genuine OCR accuracy measurement
+instead of a round trip through synthetic text. `sample_data/fixtures/README.md` now grades
+each fixture by exactly this distinction.
+
+**One thing for the user to decide:** the invoice's "Bill To" line reads *Kanhaiya Mehta*,
+while the seeded demo store is *Sharma Kirana Store* (SPEC §11). A judge reading closely
+could notice that the bill is addressed to someone other than the shop it lands in. I did
+not rename the demo store, because that touches the SPEC's store identity, the app header,
+and the PDF export's default title, and it is a naming decision rather than a correctness
+one. Flagged rather than silently resolved.
+
+**Time:** ~20 minutes. **Commit:** pending photographed-invoice commit.

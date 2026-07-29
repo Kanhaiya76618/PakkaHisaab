@@ -1,6 +1,6 @@
 [
   {"id":"EX-01","category":"extraction","expected":{"entry_type":"credit_given"},"actual":{"entry_type":"credit_given"}},
-  {"id":"EX-02","category":"extraction","expected":{"party_name":"Gupta Traders"},"actual":{"party_name":"Gupta Traders"}},
+  {"id":"EX-02","category":"extraction","expected":{"party_name":"Mehta Kirana Shop"},"actual":{"party_name":"Mehta Kirana Shop"}},
   {"id":"EX-03","category":"extraction","expected":{"amount_paise":480000},"actual":{"amount_paise":480000}},
   {"id":"EX-04","category":"extraction","expected":{"entry_date":"2026-07-12"},"actual":{"entry_date":"2026-07-12"}},
   {"id":"EX-05","category":"extraction","expected":{"description":"written_total"},"actual":{"description":"written_total"}},

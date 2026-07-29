@@ -104,6 +104,12 @@ filename, where inside the file, what the extractor read versus what the ledger 
 its confidence, which model produced it, and why the match was made in plain language
 ("Matched because the amount and date are identical") in Hindi and English.
 
+The demo's headline exception is backed by a **real document**: `sample_data/mehta_inv_231.jpg`
+is a photograph of a printed ₹4,800 invoice (INV-231, 12/07/2026) with no matching UPI
+payment anywhere in the July export — so the engine derives an `unmatched_invoice`, and the
+Evidence Passport cites the actual photographed bill. `sample_data/generate.py` refuses to
+overwrite it, and a test enforces that.
+
 ---
 
 ## Running it
@@ -142,13 +148,22 @@ cd backend && MOCK_MODE=true .venv/bin/pytest tests
 instead of calling a provider. This is what lets the test suite run without any API key and
 what keeps the demo alive if every external API fails.
 
-Fixtures state their own provenance. The vision and speech fixtures currently in the
-repository are labelled **PLACEHOLDER**: they match each provider's documented response
-schema and are ground-truthed against `sample_data/GROUND_TRUTH.md`, but they were not
-captured from a live call, because no usable `OPENAI_API_KEY` or `SARVAM_API_KEY` was
-available while they were written. Read `sample_data/fixtures/*.json` — each one says so in
-its `_provenance` field. Replace them by recording once against real keys and diffing every
-field against the ground truth.
+Fixtures state their own provenance, and they are not all equally strong:
+
+- `vision_invoice.json` is ground-truthed against a **real photograph** —
+  `mehta_inv_231.jpg`, an actual printed invoice. The extraction is still a placeholder
+  (no key here), but because the source document is real, re-recording it against `gpt-4o`
+  is a genuine OCR accuracy measurement.
+- `vision_khaata.json` is a **PLACEHOLDER against a generated image**. It proves the
+  pipeline's shape, not real handwriting OCR. Photographing a real khaata page is the
+  highest-value fixture upgrade left.
+- The five speech fixtures are **PLACEHOLDER** in each provider's documented response shape.
+  No `SARVAM_API_KEY` exists here and SPEC §11's `voice_ramesh.m4a` has not been recorded,
+  so there is no real audio yet.
+
+Every file says which of these it is in its own `_provenance` field, and
+`sample_data/fixtures/README.md` explains the difference. Nothing in this repository claims
+a live model call that did not happen.
 
 ### Environment
 

@@ -28,7 +28,7 @@ class SourceDescriptor:
 SOURCE_CATALOGUE: dict[str, SourceDescriptor] = {
     "khaata-page-1": SourceDescriptor("khaata_photo", "khaata_page_1.jpg", "gpt-4o", 1.0),
     "khaata-page-2": SourceDescriptor("khaata_photo", "khaata_page_2.jpg", "gpt-4o", 1.0),
-    "invoice-INV-231": SourceDescriptor("invoice_image", "gupta_inv_231.jpg", "gpt-4o", 1.0),
+    "invoice-INV-231": SourceDescriptor("invoice_image", "mehta_inv_231.jpg", "gpt-4o", 1.0),
     "invoice-INV-232": SourceDescriptor("invoice_image", "kumar_inv_232.jpg", "gpt-4o", 1.0),
     "invoice-INV-233": SourceDescriptor("invoice_image", "kumar_inv_233.jpg", "gpt-4o", 1.0),
     "july-upi": SourceDescriptor("upi_csv", "july_upi.csv", "deterministic_parser", 1.0),

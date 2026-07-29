@@ -8,7 +8,7 @@ Do not edit generated values by hand; change the constants in `generate.py` and 
 | Row | Party | Amount | Entry type |
 |---|---|---:|---|
 | 1 | रमेश / Ramesh | ₹2,500 | credit_given |
-| 2 | Gupta Traders | ₹4,800 | purchase |
+| 2 | Mehta Kirana Shop | ₹4,800 | purchase |
 | 3 | Milk Booth | ₹1,200 | purchase |
 | 4 | Asha Stores | ₹1,730 | purchase |
 | 5 | Cash Sale | ₹3,500 | sale |
@@ -24,18 +24,22 @@ Do not edit generated values by hand; change the constants in `generate.py` and 
 
 | Invoice | Party | Date | Amount |
 |---|---|---|---:|
-| INV-231 | Gupta Traders | 2026-07-12 | ₹4,800 |
+| INV-231 | Mehta Kirana Shop | 2026-07-12 | ₹4,800 |
 | INV-232 | Kumar Suppliers | 2026-07-10 | ₹7,200 |
 | INV-233 | Kumar Suppliers | 2026-07-11 | ₹7,200 |
 
-- `INV-231` / Gupta Traders for **₹4,800** has no UPI payment: expected `unmatched_invoice`.
+- `INV-231` / Mehta Kirana Shop for **₹4,800** has no UPI payment: expected
+  `unmatched_invoice`. Its source document is `mehta_inv_231.jpg`, a **photograph of a real
+  printed invoice** (₹2,600 atta + ₹1,900 sunflower oil + ₹300 sugar = ₹4,800, so its own
+  arithmetic is internally consistent — the deliberate arithmetic error lives on khaata
+  page 1, not here). The generator never overwrites this file.
 - `INV-232` and `INV-233` are same-party/same-amount invoices one day apart: expected `possible_duplicate`.
 
 ## July PhonePe export
 
 - Exactly **60** data rows, with PhonePe-style `Txn Date`, `Transaction Details`, `Amount`, and `UPI Ref` headers.
 - `UPI-KUMAR-0710` and `UPI-KUMAR-0711` pay the two ₹7,200 Kumar invoices.
-- No row pays Gupta Traders / `INV-231` for ₹4,800.
+- No row pays Mehta Kirana Shop / `INV-231` for ₹4,800.
 - Four personal rows: `UPI-PERS-15000`, `UPI-PERS-2500`, `UPI-PERS-1800`, `UPI-PERS-1200`.
 - `UPI-PERS-15000` is a **₹15,000 credit** from Rahul Bhai: expected `personal_vs_business`.
 

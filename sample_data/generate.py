@@ -28,7 +28,7 @@ class KhaataRow:
 
 KHAATA_ONE = (
     KhaataRow("रमेश / Ramesh", "उधार दिया / credit", 2500, "credit_given"),
-    KhaataRow("Gupta Traders", "supplier invoice", 4800, "purchase"),
+    KhaataRow("Mehta Kirana Shop", "supplier invoice", 4800, "purchase"),
     KhaataRow("Milk Booth", "दूध", 1200, "purchase"),
     KhaataRow("Asha Stores", "masala stock", 1730, "purchase"),
     KhaataRow("Cash Sale", "बिक्री", 3500, "sale"),
@@ -48,11 +48,20 @@ KHAATA_TWO = (
     ("Milk Booth", 720, 36),
 )
 
-INVOICES = (
-    ("gupta_inv_231.jpg", "INV-231", "Gupta Traders", "2026-07-12", 4800),
+# INV-231 is a PHOTOGRAPH of a real printed invoice, committed at
+# sample_data/mehta_inv_231.jpg. SPEC §11 offers photographed staged pages as an
+# alternative to rendered ones, and a real document is stronger evidence for the demo's
+# headline exception. It is listed here so GROUND_TRUTH.md and the ledger stay in sync with
+# it, but it is deliberately NOT redrawn — see RENDERED_INVOICES below.
+PHOTOGRAPHED_INVOICE = ("mehta_inv_231.jpg", "INV-231", "Mehta Kirana Shop", "2026-07-12", 4800)
+
+RENDERED_INVOICES = (
     ("kumar_inv_232.jpg", "INV-232", "Kumar Suppliers", "2026-07-10", 7200),
     ("kumar_inv_233.jpg", "INV-233", "Kumar Suppliers", "2026-07-11", 7200),
 )
+
+# Ground-truth order: the photographed invoice first, then the rendered duplicate pair.
+INVOICES = (PHOTOGRAPHED_INVOICE, *RENDERED_INVOICES)
 PERSONAL_UPI_ROWS = (
     ("2026-07-03", "Rahul Bhai transfer (personal)", "15000.00", "UPI-PERS-15000"),
     ("2026-07-07", "Family pharmacy (personal)", "-2500.00", "UPI-PERS-2500"),
@@ -204,14 +213,18 @@ Do not edit generated values by hand; change the constants in `generate.py` and 
 |---|---|---|---:|
 {invoice_rows}
 
-- `INV-231` / Gupta Traders for **₹4,800** has no UPI payment: expected `unmatched_invoice`.
+- `INV-231` / Mehta Kirana Shop for **₹4,800** has no UPI payment: expected
+  `unmatched_invoice`. Its source document is `mehta_inv_231.jpg`, a **photograph of a real
+  printed invoice** (₹2,600 atta + ₹1,900 sunflower oil + ₹300 sugar = ₹4,800, so its own
+  arithmetic is internally consistent — the deliberate arithmetic error lives on khaata
+  page 1, not here). The generator never overwrites this file.
 - `INV-232` and `INV-233` are same-party/same-amount invoices one day apart: expected `possible_duplicate`.
 
 ## July PhonePe export
 
 - Exactly **60** data rows, with PhonePe-style `Txn Date`, `Transaction Details`, `Amount`, and `UPI Ref` headers.
 - `UPI-KUMAR-0710` and `UPI-KUMAR-0711` pay the two ₹7,200 Kumar invoices.
-- No row pays Gupta Traders / `INV-231` for ₹4,800.
+- No row pays Mehta Kirana Shop / `INV-231` for ₹4,800.
 - Four personal rows: `UPI-PERS-15000`, `UPI-PERS-2500`, `UPI-PERS-1800`, `UPI-PERS-1200`.
 - `UPI-PERS-15000` is a **₹15,000 credit** from Rahul Bhai: expected `personal_vs_business`.
 
@@ -244,7 +257,9 @@ def generate(output: Path) -> None:
     output.mkdir(parents=True, exist_ok=True)
     _draw_khaata_one(output / "khaata_page_1.jpg")
     _draw_khaata_two(output / "khaata_page_2.jpg")
-    for filename, number, party, invoice_date, amount in INVOICES:
+    # Only the rendered invoices are drawn. The photographed one is real evidence; drawing
+    # over it would replace a genuine document with a synthetic lookalike.
+    for filename, number, party, invoice_date, amount in RENDERED_INVOICES:
         _draw_invoice(output / filename, number, party, invoice_date, amount)
     _write_upi_csv(output / "july_upi.csv")
     _write_notice(output / "gst_notice_sample.txt")
