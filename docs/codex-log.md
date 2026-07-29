@@ -26,7 +26,8 @@ historical entry has been rewritten.
 | 2026-07-29 | Claude Code | R2 | Deterministic risk radar + /risk endpoint | Complete | 2 | 528e86c |
 | 2026-07-29 | Claude Code | R3+R4 | Evidence Passport payload + CSV/PDF exports | Complete | 0 | 5c600e1 |
 | 2026-07-29 | Claude Code | R5 | Connect Hisaab/Kavach/Evals to the live API | Complete | 3 | 6c22c52 |
-| 2026-07-30 | Claude Code | S1-S6 | Sarvam Indic ASR/TTS with logged Whisper fallback | Complete | 3 | (this commit) |
+| 2026-07-30 | Claude Code | S1-S6 | Sarvam Indic ASR/TTS with logged Whisper fallback | Complete | 3 | 92021f4 |
+| 2026-07-30 | Claude Code | STOP | Final verified status and gap ranking | Complete | 0 | (this commit) |
 
 ## Historical context
 
@@ -1546,3 +1547,99 @@ unbuilt. The `model_calls` provider migration is written but unapplied — no Su
 is available here.
 
 **Time:** ~70 minutes. **Commit:** pending Sarvam commit.
+
+---
+### [2026-07-30 01:20 IST] STOP · final verified status
+
+**Goal:** Close this session with a status table where every rating was produced by a
+command run in this session, and rank what is left by judging weight.
+
+## Verification run (all commands executed 2026-07-30)
+
+- `MOCK_MODE=true .venv/bin/pytest tests` → **83 passed, 0 failed** (was 50 at handover).
+- `npm run typecheck` → clean. `npm run build` → compiled, 7 routes + middleware.
+- Both servers booted; every §8 endpoint curled anonymously against the demo store.
+- Live WebSocket client received **8 structured bilingual events** across a reconcile and a
+  voice upload, including `Transcribed by saaras:v3 · detail=sarvam:saaras:v3`.
+- Browser: clicked Resolve on a live exception card → open count went 4 → 3 and the risk
+  score moved 68 → 63 through the real API.
+- Hard rules: 0 `float(` in `engine/`; the only `openai` **import** anywhere is
+  `model_router.py:137` and the only `api.sarvam.ai` reference is `model_router.py`
+  (`evals/runner.py` contains the string "openai (whisper-1)" as a display label, not an
+  import); `git grep` for key-shaped tokens → **0 hits**.
+
+## Final status table
+
+| Subsystem | Rating | Evidence |
+|---|---|---|
+| Backend test suite | VERIFIED-WORKING | 83 passed, keyless under `MOCK_MODE=true` |
+| Frontend typecheck + prod build | VERIFIED-WORKING | both clean |
+| Hard rules (paise / model-free engine / no secrets) | VERIFIED-WORKING | greps above |
+| Demo store, zero login | VERIFIED-WORKING | anonymous `POST /api/stores/demo` → 200 |
+| Demo preloaded (never an empty first screen) | VERIFIED-WORKING | `GET /ledger` → 71 entries with no prior action |
+| Reconcile + live WS stages | VERIFIED-WORKING | 4 engine events + 4 intake events observed live |
+| Deterministic engine (5 rules, 4 detectors) | VERIFIED-WORKING | e2e + golden fixture; `₹12,851.00` net recomputed independently in test |
+| `unmatched_invoice` **derived**, not scripted | VERIFIED-WORKING | fixed this session; a paid invoice now provably yields no exception |
+| Exceptions (amounts + bilingual + closed-set action) | VERIFIED-WORKING | all 4 carry real paise, Hindi/English copy, and a valid `suggested_action` |
+| Resolve exception | VERIFIED-WORKING | 200 + 422 on invalid; now behind `authorize_store`; verified through the UI |
+| Evidence Passport (SPEC §9 payload) | VERIFIED-WORKING | `invoice-INV-232` → 2 sources, both filenames, confidence, model badge, plain-language rule |
+| Risk radar (`engine/risk.py` + `/risk`) | VERIFIED-WORKING | 68/Watch as SPEC §14 requires; drops to 63 when an exception is resolved |
+| CSV export | VERIFIED-WORKING | 72 lines for 71 entries, with `evidence_files` + `match_rule` columns |
+| PDF Evidence Pack | VERIFIED-WORKING | 8,764 bytes, `%PDF` header, cover + exceptions + risk + ledger appendix |
+| Hisaab / Kavach / Evals pages | VERIFIED-WORKING | all three render live API data; `lib/demo-data.ts` deleted |
+| Agent Terminal | VERIFIED-WORKING | live WS, backoff, connection chip |
+| Sarvam `transcribe_indic` + `tts_indic` | VERIFIED-WORKING (fixtures) | routable, MOCK_MODE-backed, 12 tests; **no live provider call made — no key exists here** |
+| Whisper/TTS fallback chain | VERIFIED-WORKING (unit) | injected-failure tests prove both legs land in `model_calls` with the right `provider` and `fallback_from`. Not exercised against a live outage, because neither provider is reachable from here |
+| Voice intake path | VERIFIED-WORKING (synthetic audio) | multipart route → Sarvam → classify → 1 entry at 250,000 paise; **`sample_data/voice_ramesh.m4a` still does not exist** |
+| Indic ASR eval comparison | VERIFIED-WORKING | 17 cases; Sarvam extracts ₹2,500, Whisper does not; category scores an honest 50% |
+| INR/USD cost labelling | VERIFIED-WORKING | ₹0.05 for 6s at ₹30/hr; eval page prints "₹0.05 + $0.000", never a blended figure |
+| README + router table | VERIFIED-WORKING | created this session (the repo had none) |
+| Digitize page | **PARTIAL** | backend upload route works and is tested; `UploadZone` still never posts, `VoiceRecorder` has no `MediaRecorder` |
+| Core eval runner honesty | **PARTIAL** | 15 core cases still compare committed constants to themselves, so their 100% is true by construction. Only the ASR pair is computed |
+| Supabase persistence | **MISSING** | `reconciliation_state` is still a process-local dict; migrations (incl. the new `model_calls` provider columns) are written but unapplied — no Supabase CLI here |
+| `POST /query` (Hindi Q&A) + audible TTS | **MISSING** | `tts_indic` is routable but no endpoint or UI plays an answer |
+| `POST /notices` (model-drafted reply) | **MISSING** | Kavach drafts deterministically from live risk figures instead; honest, but not the §7.5 model pass |
+| `GET /api/model-usage` | **MISSING** | 404 |
+| Schema-drift demo (§15) | **MISSING** | not started |
+| Auth / §29 authz sweep | **EXISTS-UNTESTED** | `authorize_store` now gates every store-scoped route, but MOCK_MODE returns `None` for non-demo stores so anonymous→private answers **404, not 403**. No real JWT verified |
+| **Deployed URLs** | **MISSING** | `railway.toml` + `DEPLOY.md` are ready; `grep` finds no `vercel.app`/`railway.app` anywhere and `frontend/.env` still points at `localhost:8000`. **The viability gate is unmet until someone deploys.** |
+
+## Remaining gaps, ranked by judging weight
+
+1. **Deploy (viability gate — instant disqualification).** Nothing else on this list
+   matters if the URL does not open. Config and runbook are done; it needs an account.
+2. **Supabase persistence (Technical execution, 50%).** Process-local state means two
+   Railway replicas disagree and a restart wipes resolutions. The engine, schema, and RLS
+   policies all exist — what is missing is the repository adapter between them.
+3. **Core eval runner honesty (Technical execution + Creativity).** A judge who opens
+   `cases.json` sees `expected == actual` and may discount the whole eval page. Fix by
+   computing `actual` from the real engine, as the ASR pair already does.
+4. **Digitize page wiring (Demo quality, 5% — but it is the first tab).** The upload
+   endpoint works; the page just needs to call it, and `VoiceRecorder` needs a real
+   `MediaRecorder` to reach the Sarvam path a judge would want to try.
+5. **§29 authorization sweep (Technical execution).** Make the mock store repository
+   return a private store so anonymous→private asserts a true 403 instead of 404.
+6. **Hindi Q&A + audible TTS (Real-world impact, 20%).** `tts_indic` is already routed and
+   fixture-backed; this is one endpoint plus an audio element.
+7. **Live provider recording.** With a real `SARVAM_API_KEY`, record both transcripts once
+   and swap the PLACEHOLDER fixtures — that converts the headline Sarvam claim from
+   "documented contract" to "measured".
+8. Schema-drift path (§15) and `/api/model-usage` — genuinely optional; the spec's own
+   cut-line puts them last.
+
+## What I would do next, in order
+
+Deploy first (it is the gate), then the Supabase repository adapter behind the existing
+interfaces, then make the 15 core eval cases compute their own `actual`. Those three
+change what a judge can verify. Everything after them is polish.
+
+**Self-review of the whole session:** seven commits, each with tests written first and its
+log entry in the same commit, so `git log` and this file reconcile line for line. Three
+things I deliberately did **not** do: I did not weaken a single test to make it pass — the
+one test I edited (`test_unsupported_intake_kind_is_not_misrouted_to_invoice`) had its
+*example* repaired because `voice_note` became a supported kind, and its assertion is
+unchanged; I did not fabricate a `voice_ramesh.m4a` to make the voice path look complete;
+and I did not claim any live model call, because none was possible here. Every fixture says
+so in its own `_provenance` field, on the eval page, and in the README.
+
+**Time:** ~25 minutes. **Commit:** pending final status commit.
