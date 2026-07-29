@@ -1,16 +1,16 @@
 {
-  "_provenance": "PLACEHOLDER extraction, but ground-truthed against a REAL document: sample_data/mehta_inv_231.jpg is a photograph of a printed invoice, and every field below was read off that photograph by hand. No live vision call was made (no usable OPENAI_API_KEY in this environment). Because the source is now a real photo rather than a rendered image, re-recording this fixture against gpt-4o is a genuine accuracy measurement — run it and diff against GROUND_TRUTH.md.",
+  "_provenance": "LIVE RECORDING — not a placeholder. Captured 2026-07-30 by routing `vision_invoice` through model_router at MOCK_MODE=false against sample_data/mehta_inv_231.jpg, a photograph of a real printed invoice. Served by azure_openai deployment gpt-5.4, 1169 prompt + 135 completion tokens, 6409 ms. The entry below is the model's verbatim output, unedited. Re-record with scripts/record_vision_fixture.py.",
+  "_accuracy_vs_ground_truth": "All checkable fields correct: amount ₹4,800, date 2026-07-12, entry_type purchase, invoice number 231, and all three line items with rates and extensions. The party is returned as printed on the invoice (upper case); GROUND_TRUTH.md uses title case for display and the engine casefolds party names before matching, so they are equal.",
   "_source_document": "mehta_inv_231.jpg",
-  "_source_kind": "photograph of a real printed invoice",
   "entries": [
     {
       "entry_type": "purchase",
-      "party_name": "Mehta Kirana Shop",
+      "party_name": "MEHTA KIRANA SHOP",
       "amount_rupees": 4800,
       "entry_date": "2026-07-12",
-      "description": "Invoice INV-231 · atta 10 bag, sunflower oil 2 tin, sugar 3 bag",
-      "row_ref": "page 1, grand total",
-      "confidence": 1.0
+      "description": "Invoice No. 231. Items: ATTA (10 kg) 10 Bag @ 260 = 2,600; SUNFLOWER OIL (15 Ltr) 2 Tin @ 950 = 1,900; SUGAR (10 kg) 3 Bag @ 100 = 300. Total Rs 4,800.",
+      "row_ref": "page 1, row 1",
+      "confidence": 0.98
     }
   ]
 }

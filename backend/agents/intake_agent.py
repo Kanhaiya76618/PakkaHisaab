@@ -26,6 +26,13 @@ as entry_type "note" with description "written_total". 3) Output JSON only."""
 # §7.1 provides a verbatim khaata prompt but no invoice prompt. This parallel schema
 # preserves the contract's no-invention and source-reference rules for invoices.
 INVOICE_SYSTEM_PROMPT = """You are a data-extraction engine for Indian supplier invoices.
+These are the BUYER's books: we received this invoice, so `entry_type` is "purchase" even
+though the document is a sale from the issuer's point of view.
+`party_name` is the SUPPLIER that ISSUED the invoice — the shop named in the letterhead or
+after "For ..." near the signature. It is NEVER the "Bill To" / "Billed to" customer, who is
+our own shop. A live gpt-5.4 vision call on a real invoice returned the Bill To name until
+this was stated explicitly, and a supplier bill filed under our own name cannot be
+reconciled against anything.
 Extract only facts visible in the invoice as JSON:
 {"entries":[{"entry_type":"purchase|sale|note","party_name":str|null,
 "amount_rupees":number|null,"entry_date":"YYYY-MM-DD"|null,"description":str,

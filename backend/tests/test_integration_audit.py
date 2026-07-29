@@ -104,20 +104,23 @@ def test_placeholder_fixtures_match_generated_ground_truth() -> None:
         "row_ref": "page 1, written total",
         "confidence": 1.0,
     }
-    # INV-231's source is now a photograph of a real printed invoice, so the fixture's
-    # description names the line items visible on it (atta ₹2,600 + oil ₹1,900 +
-    # sugar ₹300 = ₹4,800) instead of just the invoice number.
-    assert invoice == [
-        {
-            "entry_type": "purchase",
-            "party_name": "Mehta Kirana Shop",
-            "amount_rupees": 4800,
-            "entry_date": "2026-07-12",
-            "description": "Invoice INV-231 · atta 10 bag, sunflower oil 2 tin, sugar 3 bag",
-            "row_ref": "page 1, grand total",
-            "confidence": 1.0,
-        }
-    ]
+    # `vision_invoice.json` is now a LIVE RECORDING from a real vision call against a
+    # photographed invoice, not a hand-written placeholder. Its prose is therefore the
+    # model's own and will legitimately differ between recordings, so this asserts every
+    # field that ground truth can actually adjudicate — and asserts them exactly — rather
+    # than pinning a sentence. Party is compared case-insensitively because the invoice is
+    # printed in upper case and the engine casefolds party names before matching.
+    assert len(invoice) == 1
+    recorded = invoice[0]
+    assert recorded["entry_type"] == "purchase", "these are the buyer's books"
+    assert recorded["party_name"].casefold() == "mehta kirana shop"
+    assert recorded["amount_rupees"] == 4800
+    assert recorded["entry_date"] == "2026-07-12"
+    assert recorded["confidence"] >= 0.9
+    assert recorded["row_ref"]
+    # Every line item and extension on the paper must survive into the description.
+    for fragment in ("231", "ATTA", "SUNFLOWER OIL", "SUGAR", "2,600", "1,900", "300", "4,800"):
+        assert fragment in recorded["description"], fragment
 
 
 def test_websocket_event_contract_matches_frontend_terminal() -> None:

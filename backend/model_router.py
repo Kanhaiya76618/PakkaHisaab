@@ -2,7 +2,11 @@
 
 Two providers live here and nowhere else:
 
-* **OpenAI** — vision, classification, reasoning, drafting, Whisper, TTS.
+* **OpenAI** — vision, classification, reasoning, drafting, Whisper, TTS. Reachable either
+  directly (`OPENAI_API_KEY`) or through **Azure OpenAI** (`AZURE_OPENAI_*`), which routes
+  by *deployment name* rather than model id and requires `max_completion_tokens`. Azure
+  serves `chat`-modality tasks only: a text deployment cannot transcribe audio, and sending
+  it audio would fail confusingly rather than loudly.
 * **Sarvam AI** — `saaras:v3` speech-to-text and `bulbul:v3` speech synthesis for Indic
   audio. Saaras is an Indian sovereign model built for code-mixed Hindi/English speech,
   and its `transcribe` mode normalizes spoken numbers to digits ("पच्चीस सौ" → 2500),
@@ -23,7 +27,7 @@ import logging
 import os
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Awaitable, Callable
 
@@ -37,20 +41,23 @@ class RouteConfig:
     model: str
     max_tokens: int | None
     provider: str = "openai"
+    # `chat` tasks can be served by Azure; `transcription`/`speech` need the provider's
+    # dedicated audio endpoints and must never be sent to a chat deployment.
+    modality: str = "chat"
 
 
 ROUTING_TABLE: dict[str, RouteConfig] = {
     "vision_khaata": RouteConfig("gpt-4o", 2000),
     "vision_invoice": RouteConfig("gpt-4o", 1500),
     "vision_upi_screenshot": RouteConfig("gpt-4o-mini", 500),
-    "transcribe_indic": RouteConfig("saaras:v3", None, provider="sarvam"),
-    "transcribe_hi": RouteConfig("whisper-1", None),
+    "transcribe_indic": RouteConfig("saaras:v3", None, provider="sarvam", modality="transcription"),
+    "transcribe_hi": RouteConfig("whisper-1", None, modality="transcription"),
     "classify_txn": RouteConfig("gpt-4o-mini", 200),
     "exception_reasoning": RouteConfig("gpt-4o", 1200),
     "notice_draft": RouteConfig("gpt-4o", 2500),
     "nl_query": RouteConfig("gpt-4o-mini", 800),
-    "tts_indic": RouteConfig("bulbul:v3", None, provider="sarvam"),
-    "tts_hi": RouteConfig("tts-1", None),
+    "tts_indic": RouteConfig("bulbul:v3", None, provider="sarvam", modality="speech"),
+    "tts_hi": RouteConfig("tts-1", None, modality="speech"),
 }
 
 # Indic-first, OpenAI as the safety net. Both legs are recorded in `model_calls`.
@@ -67,6 +74,12 @@ FIXTURE_BY_TASK = {
 }
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "sample_data" / "fixtures"
 PRICE_PER_MILLION = {"gpt-4o": (2.50, 10.00), "gpt-4o-mini": (0.15, 0.60)}
+
+AZURE_PROVIDER = "azure_openai"
+OPENAI_PROVIDER = "openai"
+# Azure pins the wire format by date. This default is the current GA version; override with
+# AZURE_OPENAI_API_VERSION if the resource is pinned elsewhere.
+AZURE_DEFAULT_API_VERSION = "2024-10-21"
 
 SARVAM_BASE_URL = "https://api.sarvam.ai"
 SARVAM_STT_PATH = "/speech-to-text"
@@ -102,6 +115,13 @@ class ModelCall:
     cost_inr: float = 0.0
     currency: str = "USD"
     fallback_from: str | None = None
+    # True when a committed fixture answered instead of the vendor. `provider` still names
+    # the vendor that owns the task, so cost currency and the eval page stay correct, while
+    # this flag keeps the telemetry from implying a call that never left the process.
+    from_fixture: bool = False
+    # False when no published price exists for `model` (e.g. a custom Azure deployment).
+    # The token counts are still real; only the money is unknown.
+    cost_known: bool = True
 
 
 @dataclass(frozen=True)
@@ -130,9 +150,34 @@ def parse_json_object(content: str) -> dict[str, Any]:
     return parsed
 
 
+def read_usage(usage: object) -> tuple[int, int]:
+    """Token counts from either shape of usage payload.
+
+    The OpenAI SDK returns an object with attributes; Azure's REST response returns a plain
+    JSON dict. Reading only attributes silently recorded zero tokens — and therefore zero
+    cost — for every Azure call.
+    """
+    if usage is None:
+        return 0, 0
+    if isinstance(usage, dict):
+        return int(usage.get("prompt_tokens") or 0), int(usage.get("completion_tokens") or 0)
+    return int(getattr(usage, "prompt_tokens", 0) or 0), int(getattr(usage, "completion_tokens", 0) or 0)
+
+
 def _cost(model: str, input_tokens: int, output_tokens: int) -> float:
     prices = PRICE_PER_MILLION.get(model, (0.0, 0.0))
     return (input_tokens * prices[0] + output_tokens * prices[1]) / 1_000_000
+
+
+def is_priced(model: str) -> bool:
+    """Whether we hold a published price for this model.
+
+    Azure deployments carry arbitrary names and their rates are per-agreement, so a
+    deployment we have no price for records its real token counts and `cost_known=False`.
+    Reporting $0.00 for a call that cost money would be a fabricated figure, which is
+    exactly what this project refuses to do elsewhere.
+    """
+    return model in PRICE_PER_MILLION
 
 
 async def _persist_model_call(call: ModelCall) -> None:
@@ -153,6 +198,8 @@ async def _persist_model_call(call: ModelCall) -> None:
         "cost_inr": call.cost_inr,
         "currency": call.currency,
         "fallback_from": call.fallback_from,
+        "from_fixture": call.from_fixture,
+        "cost_known": call.cost_known,
     }
     for _attempt in range(2):
         try:
@@ -183,6 +230,7 @@ async def _record(
     *,
     audio_seconds: float = 0.0,
     fallback_from: str | None = None,
+    from_fixture: bool = False,
 ) -> None:
     sarvam = config.provider == "sarvam"
     call = ModelCall(
@@ -197,6 +245,8 @@ async def _record(
         cost_inr=sarvam_stt_cost_inr(audio_seconds) if sarvam and task.startswith("transcribe") else 0.0,
         currency="INR" if sarvam else "USD",
         fallback_from=fallback_from,
+        from_fixture=from_fixture,
+        cost_known=True if sarvam else is_priced(config.model),
     )
     MODEL_CALLS.append(call)
     await _persist_model_call(call)
@@ -211,6 +261,69 @@ def _load_fixture(task: str) -> dict[str, Any]:
         return parse_json_object(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise RouterError(f"Mock fixture is missing for task '{task}'") from exc
+
+
+def resolve_chat_provider() -> str:
+    """Which OpenAI-family provider serves chat tasks right now.
+
+    Azure wins when configured because that is the deliberate deployment choice; direct
+    OpenAI is the fallback. Raises rather than returning a provider we have no key for, so
+    a misconfiguration surfaces as a typed `RouterError` instead of a 401 mid-demo.
+    """
+    if os.environ.get("AZURE_OPENAI_API_KEY") and os.environ.get("AZURE_OPENAI_ENDPOINT"):
+        return AZURE_PROVIDER
+    if os.environ.get("OPENAI_API_KEY"):
+        return OPENAI_PROVIDER
+    raise RouterError(
+        "No chat provider is configured — set AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT, "
+        "or OPENAI_API_KEY"
+    )
+
+
+def azure_deployment() -> str:
+    """The deployment that serves chat tasks. Azure addresses models by deployment name."""
+    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME", "")
+    if not deployment:
+        raise RouterError("AZURE_OPENAI_DEPLOYMENT_NAME is not configured")
+    return deployment
+
+
+def build_azure_request(
+    config: RouteConfig, payload: dict[str, Any]
+) -> tuple[str, dict[str, str], dict[str, Any]]:
+    """Build the Azure chat-completions request. Pure, so it is testable without a key.
+
+    Two Azure-specific facts are encoded here. The model is named by the URL's deployment
+    segment, not the body. And the token cap is `max_completion_tokens`: reasoning-capable
+    deployments reject `max_tokens` with a 400.
+    """
+    if config.modality != "chat":
+        raise RouterError(
+            f"Azure OpenAI serves chat tasks only; '{config.modality}' needs a dedicated "
+            "audio deployment"
+        )
+    messages = payload.get("messages")
+    if not isinstance(messages, list) or not messages:
+        raise RouterError("Azure chat calls require a non-empty messages list")
+
+    endpoint = os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/")
+    version = os.environ.get("AZURE_OPENAI_API_VERSION") or AZURE_DEFAULT_API_VERSION
+    url = f"{endpoint}/openai/deployments/{azure_deployment()}/chat/completions?api-version={version}"
+    headers = {"api-key": os.environ["AZURE_OPENAI_API_KEY"], "content-type": "application/json"}
+    body: dict[str, Any] = {"messages": messages, "response_format": {"type": "json_object"}}
+    if config.max_tokens is not None:
+        body["max_completion_tokens"] = config.max_tokens
+    return url, headers, body
+
+
+async def _azure_request(config: RouteConfig, payload: dict[str, Any]) -> object:
+    url, headers, body = build_azure_request(config, payload)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(url, headers=headers, json=body)
+        response.raise_for_status()
+        data = response.json()
+    choice = data.get("choices") or [{}]
+    return {"content": (choice[0].get("message") or {}).get("content") or "", "usage": data.get("usage")}
 
 
 def _sarvam_key() -> str:
@@ -266,6 +379,25 @@ async def _sarvam_tts(config: RouteConfig, payload: dict[str, Any]) -> object:
 SARVAM_REQUEST_BY_TASK = {"transcribe_indic": _sarvam_transcribe, "tts_indic": _sarvam_tts}
 
 
+def effective_config(task: str, config: RouteConfig) -> RouteConfig:
+    """Resolve the config actually used, so telemetry names the real provider and model.
+
+    An OpenAI-family chat task served through Azure is recorded as `azure_openai` with the
+    deployment as its model — anything else would put a model id in `model_calls` that was
+    never actually invoked.
+    """
+    if config.provider != OPENAI_PROVIDER or config.modality != "chat":
+        return config
+    try:
+        if resolve_chat_provider() != AZURE_PROVIDER:
+            return config
+        return replace(config, provider=AZURE_PROVIDER, model=azure_deployment())
+    except RouterError:
+        # No usable credentials. Keep the declared config so a caller supplying its own
+        # request function still works, and let the actual call surface the real failure.
+        return config
+
+
 async def _openai_request(config: RouteConfig, payload: dict[str, Any]) -> object:
     # This is deliberately the only OpenAI import in the repository.
     from openai import AsyncOpenAI
@@ -298,15 +430,27 @@ async def route(
         try:
             result = _load_fixture(task)
         except RouterError:
-            await _record(task, config, started, False, audio_seconds=audio_seconds, fallback_from=fallback_from)
+            await _record(
+                task, config, started, False, audio_seconds=audio_seconds,
+                fallback_from=fallback_from, from_fixture=True,
+            )
             raise
         if config.provider == "sarvam" and audio_seconds == 0.0:
             audio_seconds = DEFAULT_MOCK_AUDIO_SECONDS
-        await _record(task, config, started, True, audio_seconds=audio_seconds, fallback_from=fallback_from)
+        await _record(
+            task, config, started, True, audio_seconds=audio_seconds,
+            fallback_from=fallback_from, from_fixture=True,
+        )
         return result
 
+    config = effective_config(task, config)
     request = payload.get("request")
-    default_request = SARVAM_REQUEST_BY_TASK.get(task, _openai_request)
+    if task in SARVAM_REQUEST_BY_TASK:
+        default_request = SARVAM_REQUEST_BY_TASK[task]
+    elif config.provider == AZURE_PROVIDER:
+        default_request = _azure_request
+    else:
+        default_request = _openai_request
     request_fn: Callable[[dict[str, Any]], Awaitable[object]] = (
         request if callable(request) else lambda data: default_request(config, data)
     )
@@ -318,9 +462,7 @@ async def route(
                 response = await response
             if isinstance(response, dict) and "content" in response:
                 result = parse_json_object(str(response["content"]))
-                usage = response.get("usage")
-                input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
-                output_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+                input_tokens, output_tokens = read_usage(response.get("usage"))
             elif isinstance(response, dict):
                 result = response
                 input_tokens = output_tokens = 0

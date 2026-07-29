@@ -36,6 +36,13 @@ This is enforced, not just claimed:
 `backend/model_router.py` is the single external-model touchpoint. Everything else calls
 `route(task, payload)` or `route_with_fallback(task, payload)`.
 
+OpenAI-family tasks reach the vendor one of two ways, decided at call time: **Azure OpenAI**
+when `AZURE_OPENAI_*` is configured, otherwise a direct `OPENAI_API_KEY`. Azure routes by
+*deployment name* rather than model id and requires `max_completion_tokens`, so
+`model_calls` records the deployment that actually served the call, not the model id we
+asked for. Azure serves `chat`-modality tasks only — a text deployment cannot transcribe
+audio, and the router refuses to send it any.
+
 | Task | Model | Provider | Why this model |
 |---|---|---|---|
 | `vision_khaata` | `gpt-4o` | OpenAI | Handwritten Devanagari + Latin numerals on a mixed-script ledger page |
@@ -79,6 +86,14 @@ all. The eval page shows this side by side as **"Indic ASR: Sarvam vs Whisper"**
 OpenAI prices tokens in USD. `model_calls` stores `cost_inr` and `cost_usd` separately with
 a `currency` label, and the eval page shows both. Collapsing them into one number would
 require an FX rate we do not have — an invented figure inside a financial product.
+
+Two flags keep that telemetry honest rather than merely present:
+
+- `from_fixture` — a committed fixture answered, so no vendor saw the call. `provider` still
+  names the vendor that owns the task, so currency and the provider breakdown stay right.
+- `cost_known` — false when no published price exists for the model. A custom Azure
+  deployment on a per-agreement rate records its **real token counts** with the money marked
+  unknown. Reporting `$0.00` for a call that cost money would be a fabricated number.
 
 ---
 
@@ -150,16 +165,20 @@ what keeps the demo alive if every external API fails.
 
 Fixtures state their own provenance, and they are not all equally strong:
 
-- `vision_invoice.json` is ground-truthed against a **real photograph** —
-  `mehta_inv_231.jpg`, an actual printed invoice. The extraction is still a placeholder
-  (no key here), but because the source document is real, re-recording it against `gpt-4o`
-  is a genuine OCR accuracy measurement.
+- `vision_invoice.json` is a **LIVE RECORDING**, not a placeholder. It was captured by
+  routing `vision_invoice` through the real router against `mehta_inv_231.jpg` — a photograph
+  of an actual printed invoice — and it holds the model's verbatim output. Every field ground
+  truth can adjudicate came back correct: ₹4,800, 2026-07-12, `purchase`, invoice 231, and
+  all three line items with their rates and extensions. Re-record any time with
+  `python scripts/record_vision_fixture.py --task vision_invoice --image sample_data/mehta_inv_231.jpg`.
 - `vision_khaata.json` is a **PLACEHOLDER against a generated image**. It proves the
   pipeline's shape, not real handwriting OCR. Photographing a real khaata page is the
   highest-value fixture upgrade left.
 - The five speech fixtures are **PLACEHOLDER** in each provider's documented response shape.
-  No `SARVAM_API_KEY` exists here and SPEC §11's `voice_ramesh.m4a` has not been recorded,
-  so there is no real audio yet.
+  No `SARVAM_API_KEY` exists yet and SPEC §11's `voice_ramesh.m4a` has not been recorded, so
+  there is no real audio to transcribe. Azure has no Whisper or TTS deployment either, so the
+  audio tasks have no live route at all right now — the router says so loudly instead of
+  sending audio to a text model.
 
 Every file says which of these it is in its own `_provenance` field, and
 `sample_data/fixtures/README.md` explains the difference. Nothing in this repository claims

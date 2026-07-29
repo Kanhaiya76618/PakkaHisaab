@@ -28,7 +28,8 @@ historical entry has been rewritten.
 | 2026-07-29 | Claude Code | R5 | Connect Hisaab/Kavach/Evals to the live API | Complete | 3 | 6c22c52 |
 | 2026-07-30 | Claude Code | S1-S6 | Sarvam Indic ASR/TTS with logged Whisper fallback | Complete | 3 | 92021f4 |
 | 2026-07-30 | Claude Code | STOP | Final verified status and gap ranking | Complete | 0 | bd7dcf6 |
-| 2026-07-30 | Claude Code | Data | Real photographed invoice replaces generated INV-231 | Complete | 2 | (this commit) |
+| 2026-07-30 | Claude Code | Data | Real photographed invoice replaces generated INV-231 | Complete | 2 | 0603ad5 |
+| 2026-07-30 | Claude Code | Azure | Azure OpenAI provider + first live vision recording | Complete | 4 | (this commit) |
 
 ## Historical context
 
@@ -1740,3 +1741,119 @@ and the PDF export's default title, and it is a naming decision rather than a co
 one. Flagged rather than silently resolved.
 
 **Time:** ~20 minutes. **Commit:** pending photographed-invoice commit.
+
+---
+### [2026-07-30 04:30 IST] Azure OpenAI provider · and the first live model call in this project
+
+**Goal:** The user supplied Azure OpenAI credentials and asked whether they work. Answer it
+by execution, then make the application actually able to use them.
+
+**Verified before writing any code.** The key authenticates. Deployment `gpt-5.4`
+(`gpt-5.4-2026-03-05`) answers chat, honours `response_format=json_object`, **and reads
+images**. But the app could not use it, for three concrete reasons I found by probing:
+
+1. `_openai_request` built `AsyncOpenAI(api_key=OPENAI_API_KEY)`. That variable no longer
+   exists in `.env`, and Azure needs a deployment-scoped URL with an `api-key` header.
+2. The deployment **rejects `max_tokens`** with a 400 — it requires `max_completion_tokens`.
+3. Azure addresses models by *deployment name*, and only one deployment exists. `whisper-1`
+   and `tts-1` have no Azure route at all.
+
+**Plan:** Add Azure as a provider for `chat`-modality tasks only. Give `RouteConfig` a
+`modality` so transcription and speech structurally cannot be sent to a text deployment —
+that failure mode is worse than a 404, because a chat model asked to "transcribe" will
+happily return prose that looks like a transcript. Make `build_azure_request` a pure
+function so the URL shape, api-version, and the token-parameter substitution are testable
+with no key and no network.
+
+**Files touched:** `backend/model_router.py` (modality, `resolve_chat_provider`,
+`build_azure_request`, `_azure_request`, `effective_config`, `read_usage`, `is_priced`,
+`from_fixture`, `cost_known`), `backend/agents/intake_agent.py` (invoice prompt),
+`backend/config.py`, `.env.example`, `README.md`,
+`scripts/record_vision_fixture.py` (created),
+`supabase/migrations/20260730020000_add_azure_provider_and_cost_flags.sql` (created),
+`sample_data/fixtures/vision_invoice.json` (**re-recorded live**),
+`backend/tests/test_azure_provider.py` (created, 13 cases),
+`backend/tests/test_integration_audit.py`.
+
+**Tests written first:** 13 offline cases — provider resolution both ways and with no
+credentials at all; the deployment-scoped URL and pinned api-version; `api-key` header with
+no `Authorization`; no `model` in the body; `max_completion_tokens` present and `max_tokens`
+absent; audio modality refusing Azure; `model_calls` recording `azure_openai` plus the
+deployment as the model; MOCK_MODE unaffected.
+
+**Run results — four fix cycles, three of them real bugs:**
+- Run 1: FAILED — `ImportError: build_azure_request`. Intended.
+- Run 2: FAILED — my own test asserted a bare URL while the builder returned one with the
+  query string. → Fixed the *implementation* to return one ready-to-use URL (the caller was
+  awkwardly re-splitting it) and tightened the test to assert both the deployment path and
+  the pinned api-version.
+- Run 3: FAILED — 3 regressions across the existing suite. Two were **real bugs I had just
+  introduced**:
+  → `effective_config` called `resolve_chat_provider()` unconditionally, so any caller with
+    no credentials got "No chat provider" instead of its own error. Fixed by having
+    resolution fall back to the declared config when credentials are absent.
+  → I had overloaded `provider` with the value `"mock"` in MOCK_MODE. That destroyed the
+    Sarvam INR labelling the eval page reads, because the demo runs in MOCK_MODE. Replaced
+    with a separate `from_fixture` flag: `provider` keeps naming the vendor that owns the
+    task, and the flag records that no vendor was actually called. Both facts, neither lost.
+  → Third was the environment-contract test catching undocumented `AZURE_OPENAI_*`. Fixed
+    in `.env.example`.
+- Run 4: FAILED — my own indentation slip deleted the `if use_mock:` line. Restored.
+- Run 5: PASSED — 99 passed (was 96 before this work, 86 before Azure tests).
+- Frontend typecheck and production build clean.
+
+**Live verification, and three bugs only a real call could have found:**
+
+- **The router served a real call.** `provider=azure_openai model=gpt-5.4 from_fixture=False`.
+- **Bug: the invoice prompt asked for the wrong party.** The first live vision call returned
+  `party_name: "Kanhaiya Mehta"` — the invoice's *Bill To* line. Our ledger needs the
+  **supplier** who issued the bill; a supplier invoice filed under our own name reconciles
+  against nothing. The placeholder fixture had hidden this completely, because I wrote the
+  placeholder with the answer I wanted. Fixed by naming the seller explicitly in
+  `INVOICE_SYSTEM_PROMPT`.
+- **Bug: the entry landed on the wrong side of the ledger.** The next call returned
+  `entry_type: "sale"` — true from the issuer's point of view, wrong for our books, and it
+  would have inverted the net position. Fixed by stating in the prompt that these are the
+  buyer's books.
+- **Bug: every Azure call recorded 0 tokens and $0.00.** `route()` read usage with
+  `getattr`, which the OpenAI SDK's object satisfies and Azure's plain JSON dict does not.
+  Added `read_usage` handling both shapes, with a test for each. Without this the eval page
+  would have reported real paid calls as free.
+
+**The first non-placeholder fixture in this project.** With the prompt fixed,
+`vision_invoice.json` is now a **live recording** against the real photographed invoice —
+`azure_openai/gpt-5.4`, 1,169 prompt + 135 completion tokens, 6.4 s — holding the model's
+verbatim output. Field accuracy against `GROUND_TRUTH.md`: ₹4,800 ✓, 2026-07-12 ✓,
+`purchase` ✓, invoice 231 ✓, all three line items with rates and extensions ✓. The party
+returns upper case because that is how the invoice is printed; the engine casefolds before
+matching, so it is equal to the seeded title-case name.
+
+`scripts/record_vision_fixture.py` makes this repeatable and documents the rule: the
+recording is never edited to match expectations, because a disagreement between the model
+and the paper *is* the measurement.
+
+**Decision recorded — unknown prices are marked, not zeroed.** `PRICE_PER_MILLION` has no
+entry for `gpt-5.4`, and Azure deployment rates are per-agreement. I did not invent a price.
+Instead `cost_known=False` records the real token counts with the money flagged unknown, so
+the eval page can say "price not configured" rather than `$0.00`, which reads as free. This
+is the same rule as refusing to blend INR and USD at an imaginary FX rate.
+
+**Self-review:** I re-read the router diff for the single-touchpoint rule — Azure is a third
+provider but still lives only in `model_router.py`, and `engine/` is untouched. Two things I
+changed *in the implementation* rather than in a test when they disagreed: the URL-building
+contract and the mock-provider labelling. In both cases the test had described the better
+behaviour and my first implementation was wrong. The one test whose *expectations* I did
+edit — the audit's fixture assertion — moved from pinning a hand-written sentence to
+asserting every ground-truth-adjudicable field exactly, because the fixture is now a live
+recording whose prose legitimately varies between calls. I confirmed that by recording twice:
+the wording shifted (`@ 260` → `@ Rs 260`), every checkable field was identical. That is a
+tightening on facts, not a loosening.
+
+**Still true after this work:** the speech tasks have **no live route**. Azure has no
+Whisper or TTS deployment, there is no `SARVAM_API_KEY`, and `voice_ramesh.m4a` does not
+exist — so `transcribe_indic`/`tts_indic` and their fallbacks remain fixture-backed, and the
+router now says so loudly rather than sending audio to a text model. `vision_khaata.json` is
+still a placeholder against a *generated* image; photographing a real khaata page and
+recording it is now a one-command job.
+
+**Time:** ~50 minutes. **Commit:** pending Azure provider commit.
