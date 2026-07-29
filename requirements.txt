@@ -1,7 +1,17 @@
-# The Railway build context is the repository ROOT, not backend/.
+# Runtime dependencies, listed inline and NOT via `-r`.
 #
-# That is not a preference — backend/main.py resolves ROOT = parents[1] and reads
-# ROOT/sample_data inside its startup hook, so a backend-only build context would produce a
-# service that builds cleanly and then crashes on boot. Railpack detects Python from this
-# file; the start command in railway.toml switches into backend/ so `main:app` resolves.
--r backend/requirements.txt
+# Railpack copies this file alone into the dependency-install layer before the rest of the
+# source, so a `-r backend/requirements.txt` include fails there with "No such file or
+# directory" — the included file has not been copied yet. Keep every dependency literal.
+#
+# Build context is the repository root (backend/main.py reads ROOT/sample_data at startup);
+# railway.toml switches into backend/ to start the app. Mirrors backend/pyproject.toml,
+# enforced by backend/tests/test_deploy_contract.py.
+fastapi>=0.115,<1.0
+httpx>=0.27,<1.0
+openai>=1.0,<2.0
+Pillow>=10.0,<12.0
+PyJWT>=2.10,<3.0
+python-multipart>=0.0.9,<1.0
+reportlab>=4.0,<6.0
+uvicorn[standard]>=0.30,<1.0

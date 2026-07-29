@@ -31,7 +31,8 @@ historical entry has been rewritten.
 | 2026-07-30 | Claude Code | Data | Real photographed invoice replaces generated INV-231 | Complete | 2 | 0603ad5 |
 | 2026-07-30 | Claude Code | Azure | Azure OpenAI provider + first live vision recording | Complete | 4 | 1916567 |
 | 2026-07-30 | Claude Code | Sarvam | Live Sarvam STT/TTS — and a false claim corrected | Complete | 3 | c57aa94 |
-| 2026-07-30 | Claude Code | Deploy | Fix Railway build failure + a boot-crash trap in DEPLOY.md | Complete | 1 | (this commit) |
+| 2026-07-30 | Claude Code | Deploy | Fix Railway build failure + a boot-crash trap in DEPLOY.md | Complete | 1 | dba1af6 |
+| 2026-07-30 | Claude Code | Deploy | Inline pip deps — `-r` include broke the build layer | Complete | 1 | (this commit) |
 
 ## Historical context
 
@@ -2030,3 +2031,47 @@ the build capable of succeeding; the user still has to point Railway at the root
 add the environment variables. The viability gate stays open until a URL answers.
 
 **Time:** ~25 minutes. **Commit:** pending deploy-fix commit.
+
+---
+### [2026-07-30 06:00 IST] Deploy · the `-r` include broke the dependency layer
+
+**Goal:** Second Railway failure, one step further along than the first:
+`pip install -r requirements.txt` → `ERROR: Could not open requirements file: [Errno 2] No
+such file or directory: 'b…'`.
+
+**Diagnosis.** Railpack now detected Python correctly — it got as far as running pip, which
+means the previous fix worked. The truncated filename in the log begins with `'b`, i.e.
+**`'backend/requirements.txt'`**: the include I had written in the root manifest.
+
+Railpack copies the dependency manifest **alone** into its own image layer and installs from
+it before copying the rest of the source, which is standard layer-caching. At that moment
+`backend/requirements.txt` does not exist in the image, so pip's `-r` include cannot resolve.
+The root manifest has to be self-contained.
+
+**Files touched:** `requirements.txt` (dependencies inlined, include removed),
+`backend/requirements.txt` (**deleted** — one manifest, no drift),
+`backend/tests/test_deploy_contract.py` (assertion replaced), `DEPLOY.md`.
+
+**Tests written first:** replaced the previous assertion, which explicitly *followed* `-r`
+includes and so treated the broken pattern as valid, with
+`test_root_requirements_list_dependencies_inline_without_an_include` — it now fails on any
+`-r` / `--requirement` directive and states why in the message. The runtime-dependency
+coverage check is unchanged and still requires `fastapi`, `uvicorn`, `httpx`, `pyjwt`,
+`python-multipart`, and `reportlab` to be present literally.
+
+**Run results:**
+- Run 1: PASSED — 6 deploy-contract cases, full suite **126 passed**.
+
+**Self-review.** My own test was complicit: it had a branch that resolved `-r` includes and
+asserted the included file existed *on disk locally*, which is true in a checkout and false in
+railpack's dependency layer. It therefore certified the exact arrangement that broke the
+build. Testing the local filesystem is not the same as testing the build environment, and the
+first version of this test confused the two. Deleting `backend/requirements.txt` rather than
+keeping both leaves a single source of truth; local development already installs through
+`pip install -e '.[dev]'` against `backend/pyproject.toml`.
+
+Still open: no deploy has succeeded. This removes the second build-time blocker; the
+environment variables and a green deploy remain the user's step, and the viability gate stays
+open until a URL answers.
+
+**Time:** ~10 minutes. **Commit:** pending inline-requirements commit.

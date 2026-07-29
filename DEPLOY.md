@@ -17,7 +17,7 @@
    The root `railway.toml` builds from the root and starts with
    `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`, health check `/api/health`.
    Python version comes from `.python-version`; railpack detects the app from the root
-   `requirements.txt`, which includes `backend/requirements.txt`.
+   `requirements.txt`, which lists dependencies inline.
 3. In **Variables**, paste these values (do not commit them):
 
    - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`

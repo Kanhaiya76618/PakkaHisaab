@@ -39,15 +39,20 @@ def test_a_python_manifest_exists_where_the_builder_looks() -> None:
     assert (ROOT / "requirements.txt").is_file(), "root requirements.txt is what railpack detects"
 
 
-def test_root_requirements_cover_every_runtime_dependency() -> None:
-    text = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
-    # The root manifest may include the backend's list rather than duplicating it.
-    if "-r " in text:
-        for line in text.splitlines():
-            if line.strip().startswith("-r "):
-                included = ROOT / line.split("-r", 1)[1].strip()
-                assert included.is_file(), f"included manifest missing: {included}"
-                text += included.read_text(encoding="utf-8").lower()
+def test_root_requirements_list_dependencies_inline_without_an_include() -> None:
+    """`-r other/file.txt` fails during the build.
+
+    Railpack copies this manifest alone into the dependency layer before the rest of the
+    source, so an included path does not exist yet and pip aborts with
+    "Could not open requirements file". Every dependency must be literal here.
+    """
+    lines = (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
+    directives = [line.strip() for line in lines if line.strip().startswith("-")]
+    assert not any(d.startswith(("-r", "--requirement")) for d in directives), (
+        "an -r include breaks the railpack dependency layer; inline the packages instead"
+    )
+
+    text = "\n".join(lines).lower()
     for package in RUNTIME_DEPENDENCIES:
         assert package in text, f"{package} is imported at runtime but absent from requirements"
 
