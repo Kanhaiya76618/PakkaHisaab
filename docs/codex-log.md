@@ -24,7 +24,8 @@ historical entry has been rewritten.
 | 2026-07-29 | Claude Code | Plan | Remediation + Sarvam plan | Complete | 0 | bffdde4 |
 | 2026-07-29 | Claude Code | R1 | Derive unmatched-invoice exception, add amounts + bilingual copy | Complete | 1 | 6c1e40e |
 | 2026-07-29 | Claude Code | R2 | Deterministic risk radar + /risk endpoint | Complete | 2 | 528e86c |
-| 2026-07-29 | Claude Code | R3+R4 | Evidence Passport payload + CSV/PDF exports | Complete | 0 | (this commit) |
+| 2026-07-29 | Claude Code | R3+R4 | Evidence Passport payload + CSV/PDF exports | Complete | 0 | 5c600e1 |
+| 2026-07-29 | Claude Code | R5 | Connect Hisaab/Kavach/Evals to the live API | Complete | 3 | (this commit) |
 
 ## Historical context
 
@@ -1349,3 +1350,87 @@ needs Supabase Storage object reads, which do not exist yet; adding local file e
 would produce a pack that breaks in production. Recorded, not hidden.
 
 **Time:** ~25 minutes. **Commit:** pending R3+R4 commit.
+
+---
+### [2026-07-29 21:55 IST] R5 · connect the frontend to the live API
+
+**Goal:** Close the largest gap this handover found — a working backend that no page was
+calling. Replace every static import and `setTimeout` on Hisaab, Kavach, and Evals with
+real, zod-validated requests.
+
+**Plan:** One typed client in `lib/api.ts` with a schema per endpoint, so a backend shape
+change fails at the parse boundary instead of rendering wrong numbers. Delete
+`lib/demo-data.ts` outright rather than leaving it importable — a static fallback sitting
+next to a live client is exactly how a demo silently reverts to fiction. Keep every
+existing CSS class so the `DESIGN.md` token system, motion rules, and four-state pattern
+carry over unchanged.
+
+**Files touched:** `frontend/lib/api.ts` (rewritten: 6 schemas + 9 typed calls +
+`formatPaise`), `frontend/lib/demo-data.ts` (**deleted**), `frontend/lib/types.ts`
+(pruned to the three types still in use), `frontend/app/store/[id]/hisaab/page.tsx`,
+`.../kavach/page.tsx`, `.../evals/page.tsx` (rewritten against live data),
+`frontend/components/EvidencePassport.tsx` (fetches by ledger entry id),
+`frontend/components/ExceptionCard.tsx` (renders live bilingual copy + suggested action),
+`frontend/app/globals.css`, `backend/main.py` (demo preload), `sample_data/generate.py`
++ invoice image renames, `backend/evidence.py`, `backend/tests/test_sample_data.py`.
+
+**Generated:** live ledger/exception/evidence/risk/evals rendering; CSV and Evidence Pack
+download buttons; a deterministic notice draft built from the live risk figures; a
+`preload_demo_store` lifespan hook so the demo's first screen is never empty.
+
+**Tests written first:** `test_demo_store_is_preloaded_so_the_first_screen_is_never_empty`
+against a fresh `TestClient` (which triggers the lifespan), asserting ledger, four
+exceptions, and risk all answer before any user action.
+
+**Run results:**
+- Run 1: PASSED — `pytest` 70 passed; `tsc --noEmit` clean; `next build` clean.
+- Run 2: FAILED (browser) — Kavach bar chart drew four bar pairs bunched into the left
+  half while the axis ticks spanned the full width.
+  → Cause: month keys were `"04"…"07"`, which Recharts parses as numeric and switches the
+  X axis to a numeric scale, detaching bars from ticks.
+  → Fix: map to `Apr/May/Jun/Jul` and disable bar entry animation.
+- Run 3: FAILED (browser) — the risk gauge needle was **invisible**, and had been since
+  the component was first written.
+  → Cause: `.risk-gauge path { fill: none }` (specificity 0,1,1) outranked
+  `.gauge-needle { fill: var(--ink) }` (0,1,0), so the needle painted with no fill. A
+  pre-existing bug that only surfaced once someone looked at the page.
+  → Fix: `.risk-gauge .gauge-needle`, which wins on specificity.
+- Run 4: FAILED (browser) — needle visible but pivoting from the wrong point.
+  → Cause: CSS `transform-origin: 110px 110px` resolves against the group's own bounding
+  box, not the viewBox, unless `transform-box: view-box` is also set; and Framer
+  overwrites `transform-origin` from its own `originX`/`originY`.
+  → Fix: rotate via the SVG `transform` attribute with an explicit centre —
+  `rotate(angle 110 110)` — which has no origin ambiguity at all.
+- Run 5: PASSED — verified in a real browser against both servers: 71 live ledger rows
+  and a `₹12,851.00` net computed by the engine; all four exceptions with real amounts and
+  Hindi/English copy; the Evidence Passport for `invoice-INV-232` showing **both** sides of
+  the match (`kumar_inv_232.jpg` + `july_upi.csv · UPI ref UPI-KUMAR-0710`) with the plain
+  -language rule; Kavach at 68/Watch with the July spike visible; Evals rendering all 15
+  cases from `/api/evals/run`.
+
+**Decisions recorded:**
+1. The gauge needle no longer animates — it renders at its final angle. DESIGN.md motion
+   rule #5 specifies exactly this as the reduced-motion fallback, and I could not verify a
+   spring's resting position in this environment because the automated browser pane runs
+   **hidden**, which throttles `requestAnimationFrame` so the spring never settles. A
+   correct static needle beats an animation I cannot confirm lands in the right place.
+   Restoring the spring is a small, low-risk change for someone with a visible browser.
+2. Renamed `gupta_inv_232.jpg` → `kumar_inv_232.jpg` and `sharma_wholesale_078.jpg` →
+   `kumar_inv_233.jpg`. Both images render **Kumar Suppliers** invoices; the filenames were
+   stale. The Evidence Passport prints the filename next to the party, so the mismatch was
+   about to be visible in the signature feature.
+
+**Self-review:** I re-read the diff for two specific risks. First, that I had left a path
+back to fiction: `lib/demo-data.ts` is deleted and `grep` finds no importer, so there is no
+static fallback left to silently render. Second, that money could re-enter as floats:
+every amount crosses the wire as `amount_paise` integers and is formatted only in
+`formatPaise`; the sole division by 100 outside it is the Recharts axis, which is display
+scale, not ledger math.
+
+Known and **not** fixed, recorded rather than hidden: the Digitize page is still
+timer-driven — `UploadZone` never posts to the working upload endpoint and `VoiceRecorder`
+has no `MediaRecorder`. The eval runner still compares committed constants to themselves,
+so its 100% scores are true by construction rather than measured; that is the next thing I
+would fix. Both are in the closing status table.
+
+**Time:** ~55 minutes. **Commit:** pending R5 commit.

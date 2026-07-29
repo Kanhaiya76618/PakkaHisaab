@@ -298,8 +298,8 @@ html[lang="hi"] .eyebrow { letter-spacing: .03em; }
 .gauge-low { stroke: var(--positive); }
 .gauge-watch { stroke: var(--warning); }
 .gauge-high { stroke: var(--danger); }
-.gauge-needle { fill: var(--ink); stroke: none !important; }
-.gauge-hub { fill: var(--ink); }
+.risk-gauge .gauge-needle { fill: var(--ink); stroke: none; }
+.risk-gauge .gauge-hub { fill: var(--ink); stroke: none; }
 .risk-gauge text { fill: var(--ink-muted); font-family: var(--font-ui); font-size: 10px; }
 .risk-gauge > strong { position: absolute; top: 54%; font-family: var(--font-display); font-size: 2.1rem; font-variant-numeric: tabular-nums; }
 .risk-gauge > span { position: absolute; top: 77%; color: var(--ink-muted); font-size: .68rem; }
@@ -366,3 +366,20 @@ html[lang="hi"] .eyebrow { letter-spacing: .03em; }
 @media (max-width: 48rem) { .landing { padding-inline: 1rem; } .hero { min-height: auto; padding: 4rem 0; grid-template-columns: 1fr; } .khaata-art { max-width: 28rem; min-height: 19rem; margin: 0 auto; } .feature-grid { grid-template-columns: 1fr; } .app-frame { padding-left: 0; padding-bottom: 4.8rem; } .sidebar { display: none; } .topbar { padding: .5rem 1rem; } .wordmark p, .demo-badge { display: none; } .main-content { padding: 1.25rem 1rem 2rem; } .bottom-nav { position: fixed; z-index: 50; right: 0; bottom: 0; left: 0; display: grid; min-height: 4.6rem; grid-template-columns: repeat(5, 1fr); padding: .3rem max(.35rem, env(safe-area-inset-right)) max(.3rem, env(safe-area-inset-bottom)) max(.35rem, env(safe-area-inset-left)); border-top: .0625rem solid var(--border); background: var(--surface-raised); box-shadow: 0 -.5rem 1.8rem rgba(41, 37, 36, .07); } .bottom-link { display: grid; min-height: 2.75rem; place-items: center; gap: .05rem; padding: .2rem; border-radius: .45rem; color: var(--ink-muted); font-size: .75rem; font-weight: 700; line-height: 1.1; text-align: center; } .bottom-link svg { width: 1.2rem; height: 1.2rem; } .bottom-active { color: var(--brand-strong); background: color-mix(in srgb, var(--brand) 12%, var(--surface)); } .page-heading { align-items: flex-start; flex-direction: column; gap: .9rem; } .page-heading .button { align-self: flex-start; } .ledger-table { min-width: 44rem; } .exception-card { grid-template-columns: auto 1fr; } .exception-resolve { grid-column: 1 / -1; width: 100%; } .risk-overview { grid-template-columns: 1fr; } .risk-gauge { width: min(100%, 15rem); margin: 0 auto; } .voice-card { align-items: flex-start; flex-direction: column; } .recorder { align-self: center; } .case-trigger { grid-template-columns: 6rem 4rem 1fr auto; gap: .5rem; } .case-trigger > span:nth-of-type(2) { display: none; } .case-detail { align-items: flex-start; flex-direction: column; } .terminal-launcher { right: 1rem; bottom: 5.5rem; } .terminal-popover { right: 1rem; bottom: 9rem; width: calc(100vw - 2rem); } }
 @media (max-width: 30rem) { .topbar-right { gap: .25rem; } .stats-grid { grid-template-columns: 1fr; } .eval-highlight { align-items: flex-start; flex-direction: column; gap: .4rem; } .codex-lines p { grid-template-columns: 1fr; gap: .15rem; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+
+/* Live-data additions: source kinds, export actions, and evidence comparison words. */
+.export-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.export-actions .button { min-height: 2.75rem; }
+.kind-khaata_photo { background: color-mix(in srgb, var(--warning) 16%, var(--surface)); color: var(--warning); }
+.kind-invoice_image { background: color-mix(in srgb, var(--positive) 15%, var(--surface)); color: var(--positive-strong); }
+.kind-upi_csv, .kind-bank_csv { background: color-mix(in srgb, var(--brand) 15%, var(--surface)); color: var(--brand-strong); }
+.kind-voice_note { background: color-mix(in srgb, var(--danger) 14%, var(--surface)); color: var(--danger); }
+.kind-manual { background: var(--bg); color: var(--ink-muted); }
+.comparison-word { margin-left: .3rem; color: var(--ink-muted); font-size: .72rem; font-style: normal; font-weight: 600; }
+.match-rule-code { margin-top: .4rem; color: var(--ink-muted); font-family: var(--font-mono); font-size: .72rem; }
+.exception-unmatched { border-left-color: var(--warning); }
+.exception-duplicate { border-left-color: var(--brand); }
+.exception-arithmetic { border-left-color: var(--danger); }
+.exception-personal { border-left-color: var(--brand-strong); }
+.risk-gauge .gauge-score { fill: var(--ink); font-family: var(--font-display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.risk-gauge .gauge-caption { fill: var(--ink-muted); font-size: 9px; }

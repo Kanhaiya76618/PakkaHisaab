@@ -108,3 +108,17 @@ def test_pdf_export_generates_a_non_empty_evidence_pack() -> None:
 
 def test_export_rejects_an_unknown_format() -> None:
     assert client.get(f"/api/stores/{DEMO_STORE_ID}/export", params={"fmt": "docx"}).status_code == 422
+
+
+def test_demo_store_is_preloaded_so_the_first_screen_is_never_empty() -> None:
+    """SPEC §11: the demo loads pre-processed. A judge must not meet a blank ledger."""
+    from fastapi.testclient import TestClient
+
+    import main
+
+    with TestClient(main.app) as fresh:
+        ledger = fresh.get(f"/api/stores/{DEMO_STORE_ID}/ledger")
+        assert ledger.status_code == 200
+        assert ledger.json()["entries"]
+        assert len(fresh.get(f"/api/stores/{DEMO_STORE_ID}/exceptions").json()["exceptions"]) == 4
+        assert fresh.get(f"/api/stores/{DEMO_STORE_ID}/risk").status_code == 200

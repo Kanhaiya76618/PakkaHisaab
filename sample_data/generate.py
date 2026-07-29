@@ -50,8 +50,8 @@ KHAATA_TWO = (
 
 INVOICES = (
     ("gupta_inv_231.jpg", "INV-231", "Gupta Traders", "2026-07-12", 4800),
-    ("gupta_inv_232.jpg", "INV-232", "Kumar Suppliers", "2026-07-10", 7200),
-    ("sharma_wholesale_078.jpg", "INV-233", "Kumar Suppliers", "2026-07-11", 7200),
+    ("kumar_inv_232.jpg", "INV-232", "Kumar Suppliers", "2026-07-10", 7200),
+    ("kumar_inv_233.jpg", "INV-233", "Kumar Suppliers", "2026-07-11", 7200),
 )
 PERSONAL_UPI_ROWS = (
     ("2026-07-03", "Rahul Bhai transfer (personal)", "15000.00", "UPI-PERS-15000"),

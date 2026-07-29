@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict
 from pathlib import Path
 from uuid import uuid4
@@ -23,7 +23,13 @@ from events import AgentLogEvent
 from evals.runner import run as run_evals
 
 
-app = FastAPI(title="PakkaHisaab API", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await preload_demo_store()
+    yield
+
+
+app = FastAPI(title="PakkaHisaab API", version="0.1.0", lifespan=lifespan)
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +47,19 @@ VALID_RESOLUTION_ACTIONS = {"create_entry", "merge_duplicates", "mark_personal",
 
 class ResolveRequest(BaseModel):
     action: str
+
+
+def _load_demo_state() -> dict[str, object]:
+    result = reconcile_sample_data(ROOT / "sample_data")
+    return {
+        "result": result,
+        "exceptions": [{"id": f"exception-{index}", **asdict(item), "status": "open"} for index, item in enumerate(result.exceptions, 1)],
+    }
+
+
+async def preload_demo_store() -> None:
+    """SPEC §11: the public demo is pre-processed, so the first screen is never empty."""
+    reconciliation_state[get_settings().demo_store_id] = _load_demo_state()
 
 
 async def _stage(store_id: str, agent: str, message_en: str, message_hi: str) -> None:
@@ -98,11 +117,7 @@ async def reconcile_store(store_id: str) -> dict[str, object]:
 async def reset_demo() -> dict[str, object]:
     """Reset the public demo on demand; works when pg_cron is unavailable."""
     store_id = get_settings().demo_store_id
-    result = reconcile_sample_data(ROOT / "sample_data")
-    reconciliation_state[store_id] = {
-        "result": result,
-        "exceptions": [{"id": f"exception-{index}", **asdict(item), "status": "open"} for index, item in enumerate(result.exceptions, 1)],
-    }
+    reconciliation_state[store_id] = _load_demo_state()
     await _stage(store_id, "System", "Demo data reset", "डेमो डेटा रीसेट हुआ")
     return {"store_id": store_id, "reset": True, "exception_count": 4}
 
