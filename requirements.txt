@@ -1,0 +1,7 @@
+# The Railway build context is the repository ROOT, not backend/.
+#
+# That is not a preference — backend/main.py resolves ROOT = parents[1] and reads
+# ROOT/sample_data inside its startup hook, so a backend-only build context would produce a
+# service that builds cleanly and then crashes on boot. Railpack detects Python from this
+# file; the start command in railway.toml switches into backend/ so `main:app` resolves.
+-r backend/requirements.txt

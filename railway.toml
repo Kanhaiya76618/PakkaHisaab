@@ -1,0 +1,15 @@
+# Railway service configuration. Leave the dashboard's Root Directory EMPTY (the repo root).
+#
+# Build context must be the root because the app reads ROOT/sample_data at startup.
+# Working directory must be backend/ because the app is imported as `main:app`.
+# The start command is what reconciles those two facts.
+
+[build]
+builder = "railpack"
+
+[deploy]
+startCommand = "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

@@ -30,7 +30,8 @@ historical entry has been rewritten.
 | 2026-07-30 | Claude Code | STOP | Final verified status and gap ranking | Complete | 0 | bd7dcf6 |
 | 2026-07-30 | Claude Code | Data | Real photographed invoice replaces generated INV-231 | Complete | 2 | 0603ad5 |
 | 2026-07-30 | Claude Code | Azure | Azure OpenAI provider + first live vision recording | Complete | 4 | 1916567 |
-| 2026-07-30 | Claude Code | Sarvam | Live Sarvam STT/TTS — and a false claim corrected | Complete | 3 | (this commit) |
+| 2026-07-30 | Claude Code | Sarvam | Live Sarvam STT/TTS — and a false claim corrected | Complete | 3 | c57aa94 |
+| 2026-07-30 | Claude Code | Deploy | Fix Railway build failure + a boot-crash trap in DEPLOY.md | Complete | 1 | (this commit) |
 
 ## Historical context
 
@@ -1964,3 +1965,68 @@ running `scripts/record_vision_fixture.py` is the last placeholder worth elimina
 deployment is still the open gate.
 
 **Time:** ~55 minutes. **Commit:** pending Sarvam-live commit.
+
+---
+### [2026-07-30 05:40 IST] Deploy · Railway build failure, and the worse bug behind it
+
+**Goal:** The user's Railway build failed with `railpack process exited with an error`.
+Diagnose and fix it.
+
+**Diagnosis from the build log.** The log listed `PLAN.md`, `README.md`, `SPEC.md`,
+`SPEC_PATCH_SUPABASE.md` — repository **root** files. So railpack's build context was the
+root, and the root contains no `requirements.txt`, `pyproject.toml`, or `package.json`.
+Railpack could not detect a language and exited before installing anything.
+
+**The worse bug, found while fixing that one.** The obvious remedy is Railway's Root
+Directory → `backend`, which is exactly what my own `DEPLOY.md` instructed. That would have
+made the build succeed and the **service crash on boot**: `backend/main.py:44` resolves
+`ROOT = parents[1]` and its startup hook calls `reconcile_sample_data(ROOT / "sample_data")`.
+A `backend`-only build context omits `sample_data/` entirely. Four runtime reads depend on it
+(reconcile, demo reset, and both risk paths), so the failure would have moved from build-time
+to boot-time and looked much more mysterious.
+
+The app has two conflicting requirements, and the fix is to satisfy both explicitly:
+* the **build context** must be the repository root, because runtime data lives outside `backend/`;
+* the **working directory** must be `backend/`, because the app is imported as `main:app`.
+
+**Files touched:** `requirements.txt` (created, root — includes the backend list rather than
+duplicating it), `backend/requirements.txt` (created), `.python-version` (created),
+`railway.toml` (created, root), `backend/railway.toml` + `backend/runtime.txt` (**deleted**),
+`DEPLOY.md` (corrected), `backend/tests/test_deploy_contract.py` (created).
+
+**Tests written first — 6 cases, each pinning one thing that actually broke:**
+a Python manifest exists where the builder looks; the root manifest covers every runtime
+import (`fastapi`, `uvicorn`, `httpx`, `pyjwt`, `python-multipart`, `reportlab`), following
+`-r` includes; the runtime data files exist **and** are outside `backend/`, which is the
+reason the root must be the context; the start command switches into `backend/` and carries
+`$PORT` and `/api/health`; **no `backend/railway.toml` exists**, because one would only be
+read under the layout that loses `sample_data/`; and `.python-version` is present, since
+railpack ignores the Heroku-style `runtime.txt` that was there instead.
+
+**Run results:**
+- Run 1: FAILED — 5 of 6 red, including the stale-config trap. Intended.
+- Run 2: PASSED — 6 passed, full suite **126 passed**.
+- Run 3: PASSED — simulated the deploy exactly: parsed `startCommand` out of `railway.toml`,
+  ran it from the repository root on a spare port. `Application startup complete`, no
+  traceback; `/api/health` 200, ledger served, risk 68/watch, and the PDF export returned
+  `%PDF`. Previously this path was only ever run with the working directory already inside
+  `backend/`, which is why the discrepancy went unnoticed.
+
+**Decision recorded.** I deleted `backend/railway.toml` rather than leaving it as an
+alternative. Two config files describing two layouts, one of which boots and one of which
+does not, is a trap for whoever deploys next — and a test now enforces its absence with the
+reason attached. `runtime.txt` went with it: railpack reads `.python-version`, so the file was
+declaring a Python version nothing consulted.
+
+**Self-review.** This was my own bug twice over: I wrote the `DEPLOY.md` instruction that
+would have caused the boot crash, and I wrote a `railway.toml` that only worked under that
+same broken assumption. Neither was caught because nothing in the suite tested the deploy
+*layout* — every local run happened to `cd backend` first, so `ROOT/sample_data` always
+resolved. The general lesson matches this session's pattern: the untested seam is the one that
+fails, and "it works on my machine" was literally a working-directory coincidence.
+
+Not fixed, and now the single remaining blocker: **no deploy has succeeded yet.** This makes
+the build capable of succeeding; the user still has to point Railway at the root config and
+add the environment variables. The viability gate stays open until a URL answers.
+
+**Time:** ~25 minutes. **Commit:** pending deploy-fix commit.

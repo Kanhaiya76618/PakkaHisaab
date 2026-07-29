@@ -4,10 +4,20 @@
 
 1. Push this repository to GitHub, then in Railway choose **New Project → Deploy
    from GitHub repo**.
-2. Select the repository and set the service **Root Directory** to `backend`.
-   In **Settings → Config as Code**, set the config path to `/backend/railway.toml`.
-   It uses Python 3.11, `uvicorn main:app --host 0.0.0.0 --port $PORT`, and
-   `/api/health`.
+2. Select the repository and **leave Root Directory EMPTY** (the repository root).
+   In **Settings → Config as Code**, set the config path to `/railway.toml`.
+
+   > **Do not set Root Directory to `backend`.** It is the obvious thing to do and it is
+   > wrong here. `backend/main.py` resolves `ROOT = parents[1]` and reads `ROOT/sample_data`
+   > inside its startup hook, so a `backend`-only build context omits the seed data and the
+   > service builds cleanly then **crashes on boot**. An earlier version of this file gave
+   > that instruction; `backend/tests/test_deploy_contract.py` now fails if the layout drifts
+   > back.
+
+   The root `railway.toml` builds from the root and starts with
+   `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`, health check `/api/health`.
+   Python version comes from `.python-version`; railpack detects the app from the root
+   `requirements.txt`, which includes `backend/requirements.txt`.
 3. In **Variables**, paste these values (do not commit them):
 
    - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`
