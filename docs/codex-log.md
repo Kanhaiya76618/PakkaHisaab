@@ -23,7 +23,8 @@ historical entry has been rewritten.
 | 2026-07-29 | Claude Code | Handover | Verified-by-execution status audit | Complete | 0 | cdcba99 |
 | 2026-07-29 | Claude Code | Plan | Remediation + Sarvam plan | Complete | 0 | bffdde4 |
 | 2026-07-29 | Claude Code | R1 | Derive unmatched-invoice exception, add amounts + bilingual copy | Complete | 1 | 6c1e40e |
-| 2026-07-29 | Claude Code | R2 | Deterministic risk radar + /risk endpoint | Complete | 2 | (this commit) |
+| 2026-07-29 | Claude Code | R2 | Deterministic risk radar + /risk endpoint | Complete | 2 | 528e86c |
+| 2026-07-29 | Claude Code | R3+R4 | Evidence Passport payload + CSV/PDF exports | Complete | 0 | (this commit) |
 
 ## Historical context
 
@@ -1302,3 +1303,49 @@ takes `history` as a plain dict, so a real multi-month store would need a persis
 adapter — noted rather than faked.
 
 **Time:** ~30 minutes. **Commit:** pending R2 commit.
+
+---
+### [2026-07-29 21:05 IST] R3 + R4 · Evidence Passport payload and exports
+
+**Goal:** Make the signature feature real — a passport payload the drawer can actually
+render — and ship the CSV/PDF exports the definition of done requires.
+
+**Plan:** Build `evidence.py` once and let both the endpoint and the CSV export consume
+it, so an export can never disagree with the screen. Kept these two together in one commit
+because the CSV's `evidence_files` and `match_rule` columns are literally the passport's
+output; splitting them would have meant committing a CSV column with no producer.
+
+**Files touched:** `backend/evidence.py` (created), `backend/exports.py` (created),
+`backend/main.py` (modified: `/export`, richer `/evidence`, authorization on `/resolve`),
+`backend/pyproject.toml` (modified: `reportlab`), `backend/tests/test_reconcile_api.py`
+(modified: 5 new tests).
+
+**Generated:** `SOURCE_CATALOGUE` provenance map, `source_ref`, `source_card`,
+`evidence_for`, `evidence_files_for`, bilingual `MATCH_RULE_PLAIN` copy for all five
+matcher rules, `ledger_csv`, and `evidence_pack_pdf` (cover summary, exception log with
+resolutions, risk table with warnings, ledger-with-evidence appendix, CA disclaimer).
+
+**Tests written first:** `test_evidence_payload_meets_the_passport_contract` (asserts each
+of kind/filename/ref/extracted/confidence/model exists — the drawer cannot render without
+them); `test_evidence_for_a_matched_entry_names_the_rule_in_plain_language` (a matched
+pair must show **both** sides as sources); CSV row-count-equals-ledger with evidence
+columns and integer-only paise; PDF starts with `%PDF` and is non-trivially sized;
+unknown `fmt` → 422.
+
+**Run results:**
+- Run 1: FAILED — 5 red: no `/export` route, thin `/evidence` payload. Intended.
+- Run 2: PASSED — **69 passed** (was 64). No fix cycles; the contract tests were written
+  from SPEC §9/§16 directly, so the implementation had a precise target.
+
+**Self-review:** Two things I checked deliberately in my own diff. First, `evidence.py`
+does no arithmetic on money — it formats paise the engine already computed, so the
+"only code touches the math" principle survives the presentation layer. Second, the
+`model` field is honest: the UPI CSV source reports `deterministic_parser`, not a model
+name, because a parser produced it. `POST /exceptions/{id}/resolve` now calls
+`ensure_authorized_store`, closing the gap this handover's audit found.
+
+Deliberately deferred: the PDF has no per-entry thumbnails (SPEC §16 asks for them). It
+needs Supabase Storage object reads, which do not exist yet; adding local file embedding
+would produce a pack that breaks in production. Recorded, not hidden.
+
+**Time:** ~25 minutes. **Commit:** pending R3+R4 commit.

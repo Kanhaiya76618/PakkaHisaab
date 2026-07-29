@@ -7,7 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,6 +17,8 @@ from events import agent_log_hub
 from agents.intake_agent import InMemoryExtractionRepository, IntakeAgent, SourceDocument, websocket_emitter
 from engine.reconciler import reconcile_sample_data
 from engine.risk import assess_sample_data
+from evidence import evidence_for
+from exports import evidence_pack_pdf, ledger_csv
 from events import AgentLogEvent
 from evals.runner import run as run_evals
 
@@ -143,13 +145,39 @@ async def exceptions(store_id: str) -> dict[str, object]:
     return {"exceptions": [] if not state else state["exceptions"]}
 
 
+@app.get("/api/stores/{store_id}/export")
+async def export_store(store_id: str, fmt: str = "csv") -> Response:
+    """SPEC §16 — the ledger as CSV, or the Month-End Evidence Pack as PDF."""
+    if fmt not in {"csv", "pdf"}:
+        raise HTTPException(422, "fmt must be csv or pdf")
+    await ensure_authorized_store(store_id, None)
+    state = reconciliation_state.get(store_id)
+    if not state:
+        raise HTTPException(409, "Run reconciliation first")
+    result = state["result"]
+    if fmt == "csv":
+        return Response(
+            content=ledger_csv(result),
+            media_type="text/csv",
+            headers={"content-disposition": 'attachment; filename="pakkahisaab_ledger.csv"'},
+        )
+    open_count = sum(1 for item in state["exceptions"] if item["status"] == "open")
+    report = assess_sample_data(ROOT / "sample_data", result, open_count)
+    return Response(
+        content=evidence_pack_pdf(result, state["exceptions"], report),
+        media_type="application/pdf",
+        headers={"content-disposition": 'attachment; filename="pakkahisaab_evidence_pack.pdf"'},
+    )
+
+
 @app.post("/api/exceptions/{exception_id}/resolve")
 async def resolve_exception(exception_id: str, body: ResolveRequest) -> dict[str, object]:
     if body.action not in VALID_RESOLUTION_ACTIONS:
         raise HTTPException(422, "Invalid resolution action")
-    for state in reconciliation_state.values():
+    for store_id, state in reconciliation_state.items():
         for item in state["exceptions"]:
             if item["id"] == exception_id:
+                await ensure_authorized_store(store_id, None)  # every store-scoped route is gated
                 item["status"] = "resolved"
                 item["resolution"] = body.action
                 return item
@@ -159,13 +187,11 @@ async def resolve_exception(exception_id: str, body: ResolveRequest) -> dict[str
 @app.get("/api/ledger-entries/{ledger_entry_id}/evidence")
 async def ledger_evidence(ledger_entry_id: str) -> dict[str, object]:
     for store_id, state in reconciliation_state.items():
-        result = state["result"]
-        entry = next((item for item in result.ledger_entries if item.id == ledger_entry_id), None)
-        if not entry:
+        passport = evidence_for(state["result"], ledger_entry_id)
+        if passport is None:
             continue
         await ensure_authorized_store(store_id, None)
-        linked = [asdict(match) for match in result.matches if ledger_entry_id in {match.left_id, match.right_id}]
-        return {"ledger_entry_id": ledger_entry_id, "store_id": store_id, "sources": [{"source_id": entry.source_id, "entry_id": entry.id, "entry_type": entry.entry_type}], "matches": linked}
+        return {**passport, "store_id": store_id}
     raise HTTPException(404, "Ledger entry not found")
 
 
