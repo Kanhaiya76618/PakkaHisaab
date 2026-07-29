@@ -50,3 +50,32 @@ def test_anonymous_request_cannot_access_private_ownerless_store(monkeypatch) ->
         assert exc.status_code == 403
     else:
         raise AssertionError("anonymous caller received a private ownerless store")
+
+
+def test_cors_admits_vercel_origins_without_chasing_preview_urls() -> None:
+    """Vercel mints a new hostname for every preview deploy, so pinning one exact origin in
+    FRONTEND_ORIGIN breaks each new deployment. A missing allow-origin header makes the
+    browser discard an otherwise-successful 200, which surfaces as "could not load"."""
+    from fastapi.testclient import TestClient
+
+    import main
+
+    with TestClient(main.app) as fresh:
+        for origin in (
+            "https://pakkahisaab.vercel.app",
+            "https://pakkahisaab-git-main-kanhaiya.vercel.app",
+            "http://localhost:3000",
+        ):
+            response = fresh.get("/api/health", headers={"Origin": origin})
+            assert response.status_code == 200
+            assert response.headers.get("access-control-allow-origin") == origin, origin
+
+
+def test_cors_still_refuses_an_unrelated_origin() -> None:
+    from fastapi.testclient import TestClient
+
+    import main
+
+    with TestClient(main.app) as fresh:
+        response = fresh.get("/api/health", headers={"Origin": "https://evil.example.com"})
+        assert "access-control-allow-origin" not in response.headers

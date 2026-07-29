@@ -159,7 +159,20 @@ export function isCredit(entryType: string): boolean {
 }
 
 async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl()}${path}`, { cache: "no-store", ...init });
+  const url = `${apiBaseUrl()}${path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, { cache: "no-store", ...init });
+  } catch (cause) {
+    // fetch only rejects for network-level failures — DNS, TLS, or a CORS block. A CORS
+    // block looks identical to being offline from here, so name both possibilities rather
+    // than telling the user to check a connection that is probably fine.
+    throw new Error(
+      `Could not reach the API at ${url}. Either it is unreachable, or it is not allowing ` +
+        `this site's origin (set FRONTEND_ORIGIN on the API to this exact URL).`,
+      { cause },
+    );
+  }
   if (!response.ok) throw new Error(`Request to ${path} failed with ${response.status}.`);
   return schema.parse(await response.json());
 }

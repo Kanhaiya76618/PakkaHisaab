@@ -33,7 +33,8 @@ historical entry has been rewritten.
 | 2026-07-30 | Claude Code | Sarvam | Live Sarvam STT/TTS — and a false claim corrected | Complete | 3 | c57aa94 |
 | 2026-07-30 | Claude Code | Deploy | Fix Railway build failure + a boot-crash trap in DEPLOY.md | Complete | 1 | dba1af6 |
 | 2026-07-30 | Claude Code | Deploy | Inline pip deps — `-r` include broke the build layer | Complete | 1 | 80cc7ab |
-| 2026-07-30 | Claude Code | Deploy | **API live on Railway** + root service index | Complete | 0 | (this commit) |
+| 2026-07-30 | Claude Code | Deploy | **API live on Railway** + root service index | Complete | 0 | 33852bc |
+| 2026-07-30 | Claude Code | Deploy | Fix CORS blocking the deployed frontend | Complete | 0 | (this commit) |
 
 ## Historical context
 
@@ -2116,3 +2117,53 @@ Still open: the **frontend is not deployed**, so the judge-facing UI is still lo
 That is now the single remaining item on the definition of done.
 
 **Time:** ~10 minutes. **Commit:** pending live-URL commit.
+
+---
+### [2026-07-30 06:40 IST] Deploy · CORS was blocking the deployed frontend
+
+**Goal:** The deployed Hisaab page rendered my "Your ledger could not load" error state even
+though every API endpoint answers correctly over the public URL.
+
+**Diagnosis, measured against the live API rather than guessed.** Sent the same request twice
+with different `Origin` headers:
+
+| Origin | `access-control-allow-origin` |
+|---|---|
+| `https://pakkahisaab.vercel.app` | **absent** |
+| `http://localhost:3000` | `http://localhost:3000` |
+
+So the API returns 200 and the browser then discards the response for want of an allow-origin
+header. `FRONTEND_ORIGIN` is unset on Railway, so it falls back to its `localhost:3000`
+default — which is why every endpoint works from curl and none work from the deployed site.
+
+**Fix, and why not just "set the variable".** Setting `FRONTEND_ORIGIN` to the production URL
+does resolve it, but Vercel mints a **new hostname for every preview deploy**, so an
+exact-origin allowlist breaks again on the next push and fails in this same silent way. Added
+`allow_origin_regex=r"https://[a-z0-9-]+\.vercel\.app"` alongside the explicit list, so
+production and preview deployments are both admitted while unrelated origins stay refused.
+`FRONTEND_ORIGIN` remains the explicit pin for a custom domain.
+
+**Files touched:** `backend/main.py` (CORS regex), `backend/tests/test_authz_api.py`
+(two tests), `frontend/lib/api.ts` (error message).
+
+**Tests written first:** `test_cors_admits_vercel_origins_without_chasing_preview_urls` checks
+that a production Vercel host, a branch-preview host, and localhost each get their own origin
+echoed back; `test_cors_still_refuses_an_unrelated_origin` checks the regex did not become a
+wildcard.
+
+**Also fixed — the error message was actively misleading.** `AsyncState` said "Check your
+connection and try again", but the user's connection was fine; the request was blocked. `fetch`
+rejects identically for offline, DNS, TLS, and CORS failures, so the client now distinguishes a
+network-level rejection from a non-2xx status and names both plausible causes, including the
+exact URL it tried and the `FRONTEND_ORIGIN` remedy. `DESIGN.md` requires errors to say what
+went wrong and how to fix it; "check your connection" met neither bar when the cause was a
+server-side allowlist.
+
+**Run results:** PASSED — **129 passed**; frontend typecheck and production build clean.
+
+**Self-review.** This failure mode is worth naming: the API was fully healthy, every curl
+returned correct data, and the only broken thing was a response *header*. Nothing in the suite
+had ever asserted a CORS header, so a green backend and a dead frontend were entirely
+consistent with each other. The two new tests close that gap.
+
+**Time:** ~15 minutes. **Commit:** pending CORS commit.

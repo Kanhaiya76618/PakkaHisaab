@@ -31,9 +31,15 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="PakkaHisaab API", version="0.1.0", lifespan=lifespan)
 settings = get_settings()
+# Vercel issues a fresh hostname for every preview deploy, so an exact-origin allowlist
+# silently breaks each new deployment: the request succeeds, the browser drops the response
+# for want of an allow-origin header, and the UI reports "could not load". The regex admits
+# this project's Vercel deployments (production and previews) while still refusing everything
+# else, and FRONTEND_ORIGIN remains the explicit pin for a custom domain.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origin_regex=r"https://[a-z0-9-]+\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
