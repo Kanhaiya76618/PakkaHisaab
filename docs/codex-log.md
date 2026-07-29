@@ -1,16 +1,26 @@
-# Codex build log
+# PakkaHisaab build log
 
-| Date | Milestone | Task | Outcome | Fix cycles | Commit |
-|------|-----------|------|---------|-----------|--------|
-| 2026-07-26 | 1 | Contract intake and full-project plan | Complete | 0 | ff69528 |
-| 2026-07-26 | 1 | Day 1 implementation and verification | Complete | 4 | edf9d23 |
-| 2026-07-26 | 2 | Intake pipeline plan | Complete | 0 | 1281749 |
-| 2026-07-26 | 2 | CSV, router, and vision intake | Complete | 6 | 8c2fae3 |
-| 2026-07-26 | 2.5 | Integration audit and sample-data plan | Complete | 0 | 9cea175 |
-| 2026-07-26 | 2.5 | Audit and sample data | Complete | 5 | 7a9e3d8 |
-| 2026-07-26 | Audit | Pre-M3 integration audit plan | Complete | 0 | pending plan commit |
-| 2026-07-26 | 3 | Deterministic engine plan | Complete | 0 | pending plan commit |
-| 2026-07-26 | Audit | Read-only contract trace | Findings recorded | 1 | pending audit baseline commit |
+**Authorship.** Entries dated 2026-07-26 were written by **Codex**, which ran out of
+credits mid-project. From the handover entry dated **2026-07-29** onward, every entry is
+written by **Claude Code**. Nothing below is attributed to the other agent, and no
+historical entry has been rewritten.
+
+| Date | Agent | Milestone | Task | Outcome | Fix cycles | Commit |
+|------|-------|-----------|------|---------|-----------|--------|
+| 2026-07-26 | Codex | 1 | Contract intake and full-project plan | Complete | 0 | ff69528 |
+| 2026-07-26 | Codex | 1 | Day 1 implementation and verification | Complete | 4 | edf9d23 |
+| 2026-07-26 | Codex | 2 | Intake pipeline plan | Complete | 0 | 1281749 |
+| 2026-07-26 | Codex | 2 | CSV, router, and vision intake | Complete | 6 | 8c2fae3 |
+| 2026-07-26 | Codex | 2.5 | Integration audit and sample-data plan | Complete | 0 | 9cea175 |
+| 2026-07-26 | Codex | 2.5 | Audit and sample data | Complete | 5 | 7a9e3d8 |
+| 2026-07-26 | Codex | Audit | Pre-M3 integration audit plan | Complete | 0 | 975b3f3 |
+| 2026-07-26 | Codex | 3 | Deterministic engine plan | Complete | 0 | fc008c5 |
+| 2026-07-26 | Codex | Audit | Read-only contract trace | Findings recorded | 1 | 149ca6c |
+| 2026-07-26 | Codex | 3 | Deterministic reconciler | Complete | 4 | fa84a85 |
+| 2026-07-26 | Codex | 4+5 | Live reconcile/ledger/exceptions/evidence API | Partial | 2 | 8e50bb9, e70e262 |
+| 2026-07-26 | Codex | Deploy | Railway + Vercel config (no live URL) | Partial | 1 | dde280a |
+| 2026-07-26 | Codex | Scope | On-demand demo reset, fixture eval runner | Complete | 0 | 98c6b3b, c99111f |
+| 2026-07-29 | Claude Code | Handover | Verified-by-execution status audit | Complete | 0 | (this entry) |
 
 ## Historical context
 
@@ -1111,3 +1121,74 @@ references must never match) and two incomplete test/API assumptions. The next c
 will correct the public typed contract and keep rule precedence explicit.
 
 **Time:** in progress. **Commit:** pending matcher implementation commit.
+
+---
+### Agent handover: Codex → Claude Code [2026-07-29 19:42 IST]
+
+**Goal:** Establish the true state of the repository by execution, not by trusting
+`PLAN.md` checkmarks or prior log claims, before writing any new feature code.
+
+**Plan:** Run the backend suite, the frontend typecheck and production build, boot both
+servers, curl every §8 endpoint against the demo store, drive the WebSocket during a real
+reconcile, grep the hard rules, and read every frontend page for live-vs-static data.
+Rate each subsystem VERIFIED-WORKING / EXISTS-UNTESTED / PARTIAL / MISSING and record the
+command or file:line that justifies the rating. No rating is inferred from a prior entry.
+
+**Files touched:** `docs/codex-log.md` (modified: authorship note, agent column, this entry).
+
+**Tests written first:** None — this is a read-only audit. Every claim below is backed by
+a command that was actually run in this session.
+
+## Handover status table
+
+| Subsystem | Rating | Evidence (executed this session) |
+|---|---|---|
+| Backend test suite | VERIFIED-WORKING | `MOCK_MODE=true pytest tests` → **50 passed, 0 failed**, 0.76s. Matches nothing previously claimed; prior log's last count was 48. |
+| Frontend typecheck | VERIFIED-WORKING | `npm run typecheck` → clean. |
+| Frontend production build | VERIFIED-WORKING | `npm run build` → compiled, 7 routes + middleware emitted. |
+| Hard rule: money is integer paise | VERIFIED-WORKING | No `float(` anywhere in `backend/engine/`; ledger API returns `amount_paise` ints. |
+| Hard rule: `engine/` is model-free | VERIFIED-WORKING | `engine/` imports only stdlib + sibling engine modules. Sole `openai` import is lazy, inside `backend/model_router.py:137`. |
+| Hard rule: no secrets in code | VERIFIED-WORKING | Key-shaped-token grep over `*.py/ts/tsx/json/toml/md` → 0 hits. Real values live only in gitignored `backend/.env` / `frontend/.env`. |
+| `POST /api/stores/demo` (zero login) | VERIFIED-WORKING | Anonymous curl → `{"store_id":"0000…0001","is_public":true,"is_demo":true}`. |
+| `POST /reconcile` transport + WS stages | VERIFIED-WORKING | Live `websockets` client received 4 events (System connect, Reconciler, Exception, Audit) during a real reconcile. |
+| Reconciliation engine (matching, duplicate, arithmetic, personal) | VERIFIED-WORKING | Deterministic; e2e + golden-fixture tests pass; `ledger_total_paise` recomputed independently in the test. |
+| `unmatched_invoice` exception | **PARTIAL — scripted** | `engine/reconciler.py:56` appends `ExceptionRecord("unmatched_invoice", ("invoice-INV-231",))` **unconditionally**. It is not derived from `result.unmatched_ids`. The demo's headline exception is a constant, and the three invoices themselves are hardcoded in Python (`reconciler.py:50`) rather than read from `sample_data/`. |
+| Exceptions payload | PARTIAL | 4 exceptions reproduce deterministically, but `unmatched_invoice` and `possible_duplicate` carry `amount_paise: 0`, and none carry the `summary_en` / `summary_hi` / `suggested_action` required by SPEC §5. No Exception Agent (SPEC §7.3) exists. |
+| `POST /exceptions/{id}/resolve` | PARTIAL | Closed-set enum enforced (valid → 200 resolved, `"nope"` → 422). But the route never calls `authorize_store`, violating AGENTS.md "every store-scoped route goes through `authorize_store`". |
+| `GET /ledger-entries/{id}/evidence` | PARTIAL | Returns live `source_id`/`entry_type` + match links. Missing everything the Evidence Passport contract (SPEC §9) needs: filename, `ref`, extracted-vs-ledger field pairs, confidence, model badge, plain-language rule, thumbnail URL. |
+| `GET /ledger`, `GET /exceptions` | VERIFIED-WORKING | Both 200 against the demo store after reconcile; ledger returns integer paise. |
+| Agent Terminal (frontend) | VERIFIED-WORKING | Real `WebSocket` with capped exponential backoff and a visible connection chip; renders the exact 5-field backend event. |
+| **Hisaab page (frontend)** | **MISSING — the page is a mock** | `app/store/[id]/hisaab/page.tsx:21-27` renders `lib/demo-data.ts` rupee floats; "Run reconciliation" is `setTimeout(…, 900)`; "Resolve" is `setTimeout(…, 450)` + a client-side `filter`. It issues **zero** API calls. The live backend built on 2026-07-26 was never connected to it. |
+| Kavach page (frontend) | MISSING | Hardcoded score 68, static `riskMonths`, notice draft is a `setTimeout` returning a canned string. |
+| Evals page (frontend) | MISSING | Hardcoded stat cards and `evalCases`, despite a working `GET /api/evals/run`. |
+| Digitize page (frontend) | PARTIAL | `UploadZone` holds files in React state and never posts; the backend upload route exists and works. `VoiceRecorder` has no `MediaRecorder` at all — it is a timer showing a canned transcript. |
+| `GET /api/stores/{id}/risk` + `engine/risk.py` | MISSING | Endpoint 404. `backend/engine/risk.py` does not exist. |
+| `GET /api/stores/{id}/export` (CSV/PDF) | MISSING | Endpoint 404. No export module; `reportlab` was not even a dependency. |
+| `POST /api/stores/{id}/query` (Hindi Q&A) + TTS | MISSING | Endpoint 404. |
+| `POST /api/stores/{id}/notices` (Kavach drafter) | MISSING | Endpoint 404. |
+| `GET /api/model-usage` | MISSING | Endpoint 404. |
+| Eval runner (backend) | VERIFIED-WORKING | `GET /api/evals/run` returns the 15 required cases with pass/fail and per-case cost; `test_evals.py` passes. Costs are all `0` because no live model call has ever been made. |
+| Vision extraction fixtures | PARTIAL | `sample_data/fixtures/vision_*.json` are PLACEHOLDERs, honestly labelled as such by Codex. No live vision call has been recorded. |
+| Voice note asset | MISSING | SPEC §11 requires `voice_ramesh.m4a`; `sample_data/` has no audio file. |
+| Supabase persistence | MISSING | `backend/main.py:34` keeps all reconciliation output in a process-local `dict`. Nothing writes `source_documents`, `extracted_entries`, `ledger_entries`, `matches`, or `exceptions` to Postgres. Migrations and RLS policies exist and are well-formed but have never been applied (`supabase` CLI absent). |
+| Auth / authorization | EXISTS-UNTESTED | `current_user` + `ensure_authorized_store` are correct in shape and used by most routes; login UI and middleware build. But `db.get_store` returns `None` for any non-demo store in MOCK_MODE, so the §29 "anonymous → private = 403" case cannot be exercised — the suite only ever sees 404. No real JWT has been verified. |
+| Deployment (Railway/Vercel) | MISSING (config PARTIAL) | `backend/railway.toml` + `backend/runtime.txt` + `DEPLOY.md` runbook exist and are sane. **No live URL exists anywhere in the repo or log**, `frontend/.env` still points at `localhost:8000`, and there is nothing to `curl`. The viability gate is therefore currently **unmet**. |
+| API keys | Not available | `backend/.env` has a 15-character `OPENAI_API_KEY` — not a real key. There is no `SARVAM_API_KEY`. All model work in this session is MOCK_MODE/fixture-based and will be labelled as such. |
+
+**Run results:**
+- Run 1: PASSED — `MOCK_MODE=true .venv/bin/pytest tests` → 50 passed.
+- Run 2: PASSED — `npm run typecheck`; `npm run build`.
+- Run 3: PASSED — uvicorn booted on 127.0.0.1:8000; health/demo/reconcile/ledger/exceptions/resolve/evidence all 200.
+- Run 4: FAILED (expected, recorded as MISSING) — `/risk`, `/export?fmt=csv`, `/query`, `/model-usage` → 404.
+- Run 5: PASSED — live WebSocket received 4 structured bilingual events during a real reconcile.
+
+**Self-review:** The prior log is honest about *most* of these gaps — the final gap-closure
+table already said "Ledger UI PARTIAL, UI still static/timer-driven". Two things it does
+**not** say, and which this audit adds: (1) the `unmatched_invoice` exception is a
+hardcoded constant, not a detected anomaly, so the demo's headline moment is currently
+scripted at the engine level; (2) `POST /exceptions/{id}/resolve` skips authorization.
+The largest single gap is not any missing endpoint — it is that the working backend is
+not connected to any page, so the product a judge would click through is a mock.
+Correcting that ranks above every new feature.
+
+**Time:** ~35 minutes. **Commit:** pending handover audit commit.
