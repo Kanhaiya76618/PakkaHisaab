@@ -225,6 +225,57 @@ export async function fetchEvals() {
   return request("/api/evals/run", EvalsSchema);
 }
 
+export const UploadResultSchema = z.object({
+  document_id: z.string(),
+  kind: z.string(),
+  filename: z.string(),
+  entry_count: z.number().int(),
+  entries: z.array(
+    z.object({
+      entry_type: z.string(),
+      party_name: z.string().nullable(),
+      amount_paise: z.number().int().nullable(),
+      amount: z.string().nullable(),
+      entry_date: z.string().nullable(),
+      description: z.string(),
+      confidence: z.number(),
+      extraction_model: z.string(),
+      ref: z.string().nullable(),
+    }),
+  ),
+});
+export type UploadResult = z.infer<typeof UploadResultSchema>;
+
+/** Maps a picked file to the backend's `kind` enum. */
+export function documentKind(file: File): string {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".csv")) return "upi_csv";
+  if (file.type.startsWith("audio/") || /\.(m4a|webm|wav|mp3|ogg)$/.test(name)) return "voice_note";
+  if (name.includes("khaata") || name.includes("khata")) return "khaata_photo";
+  if (file.type.startsWith("image/")) return "invoice_image";
+  return "manual";
+}
+
+export async function uploadDocument(storeId: string, file: File, kind?: string): Promise<UploadResult> {
+  const body = new FormData();
+  body.append("kind", kind ?? documentKind(file));
+  body.append("file", file);
+  const response = await fetch(`${apiBaseUrl()}/api/stores/${storeId}/uploads`, { method: "POST", body });
+  if (!response.ok) {
+    // The API returns a specific reason (empty file, unreadable, provider down); surface it
+    // rather than a generic failure, per DESIGN.md's rule on error copy.
+    let detail = `Upload failed with ${response.status}.`;
+    try {
+      const parsed = await response.json();
+      if (typeof parsed?.detail === "string") detail = parsed.detail;
+    } catch {
+      /* keep the status-based message */
+    }
+    throw new Error(detail);
+  }
+  return UploadResultSchema.parse(await response.json());
+}
+
 export function exportUrl(storeId: string, fmt: "csv" | "pdf") {
   return `${apiBaseUrl()}/api/stores/${storeId}/export?fmt=${fmt}`;
 }

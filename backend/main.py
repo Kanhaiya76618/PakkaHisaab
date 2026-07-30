@@ -15,12 +15,14 @@ from auth import current_user, ensure_authorized_store
 from config import DEMO_STORE_ID, get_settings
 from events import agent_log_hub
 from agents.intake_agent import InMemoryExtractionRepository, IntakeAgent, SourceDocument, websocket_emitter
+from engine.exception_text import format_paise
 from engine.reconciler import reconcile_sample_data
 from engine.risk import assess_sample_data
 from evidence import evidence_for
 from exports import evidence_pack_pdf, ledger_csv
 from events import AgentLogEvent
 from evals.runner import run as run_evals
+from model_router import RouterError
 
 
 @asynccontextmanager
@@ -128,8 +130,11 @@ async def upload_document(
     await ensure_authorized_store(store_id, None)
     document_id = str(uuid4())
     raw = await file.read()
-    # CSVs are text; audio must stay bytes — decoding it would corrupt the upload.
+    if not raw:
+        raise HTTPException(422, "The uploaded file is empty")
+    # CSVs are text; audio and images must stay bytes — decoding would corrupt them.
     is_csv = kind in {"bank_csv", "upi_csv"}
+    is_image = kind in {"khaata_photo", "invoice_image", "upi_screenshot"}
     document = SourceDocument(
         document_id,
         store_id,
@@ -137,13 +142,41 @@ async def upload_document(
         file.filename or "upload",
         content=raw.decode("utf-8", errors="replace") if is_csv else None,
         audio_bytes=raw if kind == "voice_note" else None,
+        image_bytes=raw if is_image else None,
+        media_type=file.content_type or "image/jpeg",
     )
-    entries = await IntakeAgent(
-        repository=upload_repository,
-        emit=websocket_emitter(store_id),
-        mock_mode=get_settings().mock_mode,
-    ).process(document)
-    return {"document_id": document_id, "entry_count": len(entries)}
+    try:
+        entries = await IntakeAgent(
+            repository=upload_repository,
+            emit=websocket_emitter(store_id),
+            mock_mode=get_settings().mock_mode,
+        ).process(document)
+    except RouterError as exc:
+        # Extraction failed (bad file, provider down, unsupported kind). Say so plainly
+        # instead of returning a success with zero rows, which reads as "nothing in it".
+        raise HTTPException(422, str(exc)) from exc
+    return {
+        "document_id": document_id,
+        "kind": kind,
+        "filename": document.filename,
+        "entry_count": len(entries),
+        # Returned so the uploader can show what was actually read out of *their* document,
+        # rather than only a count.
+        "entries": [
+            {
+                "entry_type": entry.entry_type,
+                "party_name": entry.party_name,
+                "amount_paise": entry.amount_paise,
+                "amount": format_paise(entry.amount_paise) if entry.amount_paise is not None else None,
+                "entry_date": entry.entry_date,
+                "description": entry.description,
+                "confidence": entry.confidence,
+                "extraction_model": entry.extraction_model,
+                "ref": entry.bbox_or_line_ref,
+            }
+            for entry in entries
+        ],
+    }
 
 
 @app.post("/api/stores/{store_id}/reconcile")

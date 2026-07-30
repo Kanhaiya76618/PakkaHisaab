@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import inspect
 import re
 from dataclasses import dataclass, field
@@ -38,6 +39,11 @@ Extract only facts visible in the invoice as JSON:
 {"entries":[{"entry_type":"purchase|sale|note","party_name":str|null,
 "amount_rupees":number|null,"entry_date":"YYYY-MM-DD"|null,"description":str,
 "row_ref":"page P, row N","confidence":0.0-1.0}]}
+CRITICAL — totals versus line items. Emit the invoice's GRAND TOTAL as exactly ONE entry with
+entry_type "purchase" and row_ref "grand total". Emit every individual line item as
+entry_type "note" with row_ref "page P, row N". Never give a line item entry_type "purchase":
+the line items and the grand total describe the same money, so counting both would inflate the
+invoice to roughly double its face value in the cashbook.
 Never invent an amount or date. If a field is unreadable use null and confidence <=0.3.
 Output JSON only."""
 
@@ -100,6 +106,30 @@ class SourceDocument:
     content: str | None = None
     audio_bytes: bytes | None = None
     audio_seconds: float = 0.0
+    image_bytes: bytes | None = None
+    media_type: str = "image/jpeg"
+
+
+def build_vision_messages(
+    prompt: str, filename: str, image_bytes: bytes, media_type: str = "image/jpeg"
+) -> list[dict[str, Any]]:
+    """Multipart chat messages carrying the document itself.
+
+    The image is inlined as a base64 data URI. Sending the filename alone — which this code
+    used to do — asks the model to imagine a document, and imagined amounts are exactly what
+    this project promises never to put in a ledger.
+    """
+    encoded = base64.b64encode(image_bytes).decode()
+    return [
+        {"role": "system", "content": prompt},
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": f"Extract every row from {filename}."},
+                {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{encoded}"}},
+            ],
+        },
+    ]
 
 
 class ExtractionRepository(Protocol):
@@ -167,13 +197,18 @@ class IntakeAgent:
             raise RouterError(f"Unsupported intake document kind '{document.kind}'")
         await self._emit("info", f"Extracting {task.replace('_', ' ')}", "दस्तावेज़ से जानकारी निकाली जा रही है", task)
         prompt = KHAATA_SYSTEM_PROMPT if task == "vision_khaata" else INVOICE_SYSTEM_PROMPT
-        payload: dict[str, Any] = {
-            "source_document_id": document.id,
-            "messages": [
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Extract {document.filename}."},
-            ],
-        }
+        if document.image_bytes:
+            messages = build_vision_messages(prompt, document.filename, document.image_bytes, document.media_type)
+        elif self.mock_mode:
+            # MOCK_MODE serves a committed fixture, so no model sees this payload.
+            messages = [{"role": "system", "content": prompt},
+                        {"role": "user", "content": f"Extract {document.filename}."}]
+        else:
+            raise RouterError(
+                f"Cannot extract '{document.filename}' — no image bytes were supplied. Refusing "
+                "to call a vision model with only a filename, because it would invent amounts."
+            )
+        payload: dict[str, Any] = {"source_document_id": document.id, "messages": messages}
         result = await route(task, payload, mock_mode=self.mock_mode)
         entries = self._vision_entries(document, task, result)
         self.repository.add_many(entries)
@@ -268,7 +303,8 @@ class IntakeAgent:
                     entry_date=raw.get("entry_date") if isinstance(raw.get("entry_date"), str) else None,
                     description=str(raw.get("description") or ""),
                     confidence=confidence,
-                    extraction_model=ROUTING_TABLE[task].model,
+                    # The deployment that actually served, not the table's declared id.
+                    extraction_model=effective_config(task, ROUTING_TABLE[task]).model,
                     bbox_or_line_ref=str(raw.get("row_ref") or f"row {index}"),
                 )
             )

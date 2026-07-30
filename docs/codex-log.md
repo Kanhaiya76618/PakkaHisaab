@@ -34,7 +34,8 @@ historical entry has been rewritten.
 | 2026-07-30 | Claude Code | Deploy | Fix Railway build failure + a boot-crash trap in DEPLOY.md | Complete | 1 | dba1af6 |
 | 2026-07-30 | Claude Code | Deploy | Inline pip deps — `-r` include broke the build layer | Complete | 1 | 80cc7ab |
 | 2026-07-30 | Claude Code | Deploy | **API live on Railway** + root service index | Complete | 0 | 33852bc |
-| 2026-07-30 | Claude Code | Deploy | Fix CORS blocking the deployed frontend | Complete | 0 | (this commit) |
+| 2026-07-30 | Claude Code | Deploy | Fix CORS blocking the deployed frontend | Complete | 0 | 84b59ed |
+| 2026-07-30 | Claude Code | Intake | **Vision never sent the image** + live user uploads | Complete | 2 | (this commit) |
 
 ## Historical context
 
@@ -2167,3 +2168,98 @@ had ever asserted a CORS header, so a green backend and a dead frontend were ent
 consistent with each other. The two new tests close that gap.
 
 **Time:** ~15 minutes. **Commit:** pending CORS commit.
+
+---
+### [2026-07-30 07:15 IST] Intake · "make it real" — the vision path never sent the image
+
+**Goal:** Feedback received: *"The demo store's input documents are seeded (judges won't
+photograph a khaata) — make it real."* Make the intake pipeline genuinely process a document a
+judge supplies, rather than replaying fixtures.
+
+## The bug this uncovered is much worse than "seeded"
+
+The intake agent built its vision payload as:
+
+    {"role": "user", "content": f"Extract {document.filename}."}
+
+**No image.** Ever. The model was being asked to extract amounts from a *filename*. Under
+`MOCK_MODE` a committed fixture answered, so every test passed and the demo looked perfect —
+and my own `scripts/record_vision_fixture.py` attached the image by hand, which is why the live
+recording earlier in this session succeeded and masked the gap in the real code path. With a
+live key and a real upload, `gpt-5.4` would have invented numbers into a cashbook.
+
+The seeded fixtures were not merely unimpressive; they were concealing the fact that the
+pipeline never looked at a document at all.
+
+**Fixed, with the safety rule stated in code:** `build_vision_messages` attaches the bytes as a
+base64 data URI, and a live call **with no image is refused** rather than sent blind:
+
+    raise RouterError("Refusing to call a vision model with only a filename, because it
+                       would invent amounts.")
+
+MOCK_MODE still serves fixtures — that is the documented keyless path, where no model is
+misled.
+
+## Then a second, purely financial bug, found only by uploading an unseen document
+
+I generated an invoice the repo has never contained — `VERMA TRADING CO.`, INV-512, three line
+items summing to ₹13,100 — and uploaded it live. Extraction was accurate on every figure
+(₹4,600 / ₹6,400 / ₹2,100 / ₹13,100) but returned the three line items **and** the grand total
+all as `entry_type: "purchase"`. Summed into the ledger that is **₹26,200 for a ₹13,100
+invoice** — a near-doubling of a supplier bill.
+
+The khaata prompt had always handled this (written totals become `note`s); the invoice prompt
+never said anything about totals, so the model reasonably emitted both. Fixed by making the
+rule explicit: the grand total is the single `purchase`, every line item is a `note`.
+`engine/accounting.store_total_paise` already excludes notes, so the detail survives for the
+Evidence Passport while the arithmetic stays right. Re-verified live: **1 financial entry,
+₹13,100.00 exactly.**
+
+**Files touched:** `backend/agents/intake_agent.py` (`build_vision_messages`, image required,
+invoice total/line-item rule, effective model in provenance), `backend/main.py` (upload passes
+image bytes, returns the extracted rows, rejects empty files, maps `RouterError` → 422),
+`backend/tests/test_vision_intake.py` (created, 8 cases),
+`frontend/components/UploadZone.tsx` (rewritten — real POST per file, per-file busy/success/
+error, extracted-rows table), `frontend/components/VoiceRecorder.tsx` (rewritten — real
+`MediaRecorder`), `frontend/app/store/[id]/digitize/page.tsx` (rewritten),
+`frontend/lib/api.ts` (`uploadDocument`, `documentKind`), `frontend/lib/useDemoState.ts`
+(**deleted**), `frontend/app/globals.css`, `README.md`.
+
+**Tests written first:** the image is attached as a data URI carrying the **exact** bytes; a
+live call without an image raises; MOCK_MODE without an image still works; an uploaded image
+reaches the router as a multipart message; media type follows the file; the upload route
+returns the extracted rows with formatted amounts; an empty file is a 422 rather than a
+cheerful "0 entries"; invoice line items are notes so `store_total_paise` cannot double-count;
+and `extraction_model` records the deployment that actually served.
+
+**Run results:**
+- Run 1: FAILED — 4 red (no `build_vision_messages`, blind calls permitted). Intended.
+- Run 2: PASSED — 134, then 138 with the accounting and provenance cases.
+- Run 3: FAILED (live) — the double-counting above. Fixed in the prompt, re-verified live.
+- Run 4: PASSED — 138 passed; frontend typecheck and production build clean.
+- Run 5: PASSED (browser, `MOCK_MODE=false`, live providers) — dropped a CSV the app had never
+  seen onto the real file input: the card rendered "2 entries extracted", showing
+  `payment_out ₹13,100.00 · row 2 · deterministic_parser` and
+  `payment_in ₹2,450.00 · row 3 · deterministic_parser`, while the Agent Terminal streamed
+  `judge_upload.csv पढ़ा जा रहा है` → `2 CSV एंट्री निकाली गईं`. Uploading `verma_512.jpg`
+  through the same HTTP route returned the four `gpt-5.4` rows.
+
+**Also removed:** `useDemoState`, a hook that faked a loading spinner on the Digitize page with
+a timer. There is real asynchronous work to show now, so each upload reports its own state and
+the theatre is gone.
+
+**Self-review.** The pattern for this whole session, at its clearest: a fixture I authored
+encoded the answer I wanted, the suite went green against my own expectation, and the actual
+code path was never exercised. Three separate bugs — the missing image, the double-counted
+invoice total, and the wrong model in the provenance badge — were all invisible until a real
+document went through. The intake pipeline had never once looked at a document, in a project
+whose central claim is that every number traces to a source.
+
+**What this does and does not change.** A judge can now upload their own records and watch them
+read live, so the demo is no longer only a replay. Still true: the *seeded* store remains
+fixture-backed by design, because SPEC §11 requires the zero-click path to survive total API
+failure. And `vision_khaata.json` is still a placeholder against a generated image —
+photographing a real handwritten khaata page and running
+`scripts/record_vision_fixture.py` remains the last placeholder worth eliminating.
+
+**Time:** ~50 minutes. **Commit:** pending live-intake commit.

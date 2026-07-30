@@ -123,9 +123,16 @@ Two flags keep that telemetry honest rather than merely present:
 
 ## What it does
 
-**1 · Digitize** — multimodal intake. CSVs are parsed by pure Python (no model, confidence
-1.0). Khaata and invoice photos go to vision extraction. Hindi voice notes go to Sarvam.
-Every extracted row keeps a reference back to where it came from.
+**1 · Digitize** — multimodal intake, and it is **not a replay**. The seeded store is
+pre-processed so the first screen is never empty, but the Digitize tab accepts *your* files:
+drop in any invoice photo, khaata page, UPI CSV, or record a Hindi voice note in the browser,
+and the extracted rows come back with their amounts, confidence, source reference, and the
+model that read them. CSVs are parsed by pure Python (no model, confidence 1.0); images go to
+vision; voice goes to Sarvam.
+
+Verified on a document the repository has never contained — a generated
+`VERMA TRADING CO.` invoice for ₹13,100 — extracted live via `azure_openai/gpt-5.4` as three
+line-item notes plus one ₹13,100.00 `purchase`, all four amounts correct.
 
 **2 · Reconcile** — a deterministic engine normalizes parties (Devanagari → Latin,
 honorifics stripped), then applies five matching rules in strict priority: `exact_ref`,

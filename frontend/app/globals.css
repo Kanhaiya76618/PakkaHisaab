@@ -387,3 +387,15 @@ html[lang="hi"] .eyebrow { letter-spacing: .03em; }
 .asr-notes { margin: .75rem 1rem 1rem; padding-left: 1.1rem; color: var(--ink-muted); font-size: .8rem; }
 .asr-notes li { margin-bottom: .4rem; line-height: 1.6; }
 .asr-notes strong { color: var(--ink); font-family: var(--font-mono); font-size: .75rem; }
+
+/* Live upload results: what the model actually read out of the user's own document. */
+.upload-result { display: block; padding: .9rem; }
+.upload-result header { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .65rem; }
+.upload-result header strong { display: block; }
+.upload-result header span:not(.kind-badge) { color: var(--ink-muted); font-size: .78rem; }
+.extract-scroll { overflow-x: auto; margin-top: .75rem; border: .0625rem solid var(--border); border-radius: var(--radius-sm); }
+.extract-scroll .ledger-table { min-width: 34rem; }
+.voice-result { margin-top: .8rem; }
+.voice-extract { display: grid; gap: .55rem 1.25rem; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); margin-top: .7rem; }
+.voice-extract dt { color: var(--ink-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
+.voice-extract dd { margin: .15rem 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
