@@ -2263,3 +2263,15 @@ photographing a real handwritten khaata page and running
 `scripts/record_vision_fixture.py` remains the last placeholder worth eliminating.
 
 **Time:** ~50 minutes. **Commit:** pending live-intake commit.
+### [2026-08-01 02:50 IST] Milestone X · UdhaarBook scaffold attempt
+
+**Goal:** Scaffold UdhaarBook Next.js app.
+
+**Plan:** Request unsandboxed permission, run `npx create-next-app` with TypeScript and Tailwind.
+
+**Files touched:** None (project creation).
+
+**Generated:** Initiated creation; task failed due to network connectivity (ENOTFOUND).
+
+**Run results:**
+- Run 1: FAILED — npm network error ENOTFOUND.
