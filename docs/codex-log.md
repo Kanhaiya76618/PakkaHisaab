@@ -2274,4 +2274,22 @@ photographing a real handwritten khaata page and running
 **Generated:** Initiated creation; task failed due to network connectivity (ENOTFOUND).
 
 **Run results:**
-- Run 1: FAILED — npm network error ENOTFOUND.
+
+### [2026-08-01 03:31 IST] Milestone Frontend · AgentTerminal icon state fix
+
+**Goal:** Fix inverted Wifi / WifiOff icon rendering in AgentTerminal footer and header.
+
+**Plan:** Update `AgentTerminal.tsx` to conditionally render `<Wifi />` when `connection === "live"` and `<WifiOff />` when offline or reconnecting, resolving the contradictory disconnected icon displayed during live WebSocket streaming.
+
+**Files touched:** `frontend/components/AgentTerminal.tsx` (modified)
+
+**Generated:** Conditional icon rendering for terminal header chip and footer connection status.
+
+**Run results:**
+- Run 1: PASSED — `npm run typecheck` cleanly passed with 0 errors.
+- Run 2: PASSED — `npm run build` compiled all 7 static/dynamic routes successfully.
+
+**Self-review:** Re-read `AgentTerminal.tsx` to verify both the header status badge and footer message consistently show `<Wifi />` when connected live, and `<WifiOff />` when disconnected or reconnecting.
+
+**Time:** ~5 minutes. **Commit:** pending terminal-icon-fix commit.
+

@@ -82,13 +82,13 @@ export function AgentTerminal({ lang = "hi", embedded = false, storeId = DEMO_ST
   }
 
   const terminal = <section className="agent-terminal" aria-label="Agent activity terminal">
-    <header className="terminal-header"><div><TerminalSquare aria-hidden="true" /><span>Agent terminal</span></div><span className={`connection-chip connection-${connection}`}><Wifi aria-hidden="true" /> {connectionCopy(connection)}</span>{!embedded && <button className="terminal-close" onClick={() => setOpen(false)} aria-label="Close agent terminal"><X aria-hidden="true" /></button>}</header>
+    <header className="terminal-header"><div><TerminalSquare aria-hidden="true" /><span>Agent terminal</span></div><span className={`connection-chip connection-${connection}`}>{connection === "live" ? <Wifi aria-hidden="true" /> : <WifiOff aria-hidden="true" />} {connectionCopy(connection)}</span>{!embedded && <button className="terminal-close" onClick={() => setOpen(false)} aria-label="Close agent terminal"><X aria-hidden="true" /></button>}</header>
     <div ref={logRef} className="terminal-log" onScroll={handleScroll} aria-live="polite">
       <AnimatePresence initial={false}>{logs.map((log) => <motion.p key={log.id} className={`terminal-line terminal-${log.level}`} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}><time>{log.time}</time><strong>[{log.level.toUpperCase()}]</strong><span>{lang === "hi" ? log.message_hi : log.message_en}</span></motion.p>)}</AnimatePresence>
       {logs.length === 0 && <p className="terminal-line terminal-info"><time>—</time><strong>[WAIT]</strong><span>Connecting to the agent log…</span></p>}
     </div>
     {locked && newLogs > 0 && <button className="new-logs" onClick={() => { setLocked(false); lockedRef.current = false; setNewLogs(0); }}><ChevronDown aria-hidden="true" /> {newLogs} new {newLogs === 1 ? "message" : "messages"}</button>}
-    <footer className="terminal-footer"><WifiOff aria-hidden="true" /><span>{connection === "live" ? "Structured logs stream from the backend" : "Reconnect backoff is active"}</span></footer>
+    <footer className="terminal-footer">{connection === "live" ? <Wifi aria-hidden="true" /> : <WifiOff aria-hidden="true" />}<span>{connection === "live" ? "Structured logs stream from the backend" : "Reconnect backoff is active"}</span></footer>
   </section>;
   if (embedded) return terminal;
   return <><button className="terminal-launcher" onClick={() => setOpen(true)} aria-label="Open agent terminal"><TerminalSquare aria-hidden="true" /></button><AnimatePresence>{open && <motion.div className="terminal-popover" initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}>{terminal}</motion.div>}</AnimatePresence></>;
